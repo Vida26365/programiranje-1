@@ -1,0 +1,39 @@
+JMP main
+dolzina:
+    DB 10    ; število elementov v seznamu
+seznam:
+    DB 50    ; seznam
+    DB 56
+    DB 60
+    DB 46
+    DB 44
+    DB 58
+    DB 42
+    DB 52
+    DB 48
+    DB 54
+minimum:
+    DB 0    ; na koncu bo tu minimum
+
+spremeni_minimum:
+    MOV B, [A]
+    JMP nazaj
+
+main:
+    MOV A, seznam
+    MOV B, [A]
+    CALL .loop
+    MOV C, [dolzina]
+    ADD C, seznam
+    MOV [C], B
+    HLT
+
+.loop:
+    INC A
+    CMP B, [A]
+    JNC spremeni_minimum
+    nazaj:
+    CMP A, [dolzina]
+    JNE .loop
+    RET
+
