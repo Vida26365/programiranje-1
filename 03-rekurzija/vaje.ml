@@ -105,7 +105,12 @@ let map_tlrec f sez =
  - : int list = [0; 1; 2; 5; 6; 7]
 [*----------------------------------------------------------------------------*)
 
-let rec mapi = ()
+let rec mapi sez = 
+  let rec pom sez i = 
+    match sez with
+    | [] -> []
+    | prvi::tail -> (prvi, i) :: (pom tail (i+1)) in
+  pom sez 0
 
 (*----------------------------------------------------------------------------*]
  Funkcija [zip] sprejme dva seznama in vrne seznam parov istoležnih
@@ -117,8 +122,19 @@ let rec mapi = ()
  # zip [1; 1; 1; 1] [1; 2; 3; 4; 5];;
  Exception: Failure "Different lengths of input lists.".
 [*----------------------------------------------------------------------------*)
+(* let rec zip seza sezb = 
+  match seza with
+  | s when (List.length s) != (List.length sezb) -> raise (Failure ("Different lengths of input lists."))
+  | [] -> []
+  | prvi::tail ->
+    let first::rep = sezb in
+    (prvi, first):: (zip tail rep) *)
 
-let rec zip = ()
+let rec zip seza sezb = 
+  match seza, sezb with
+  | [],[] -> []
+  | prvi::tail, first::rep -> (prvi, first)::(zip tail rep)
+  | _,_ -> raise (Failure "Different lengths of input lists.")
 
 (*----------------------------------------------------------------------------*]
  Funkcija [unzip] je inverz funkcije [zip], torej sprejme seznam parov
@@ -129,8 +145,19 @@ let rec zip = ()
  - : int list * string list = ([0; 1; 2], ["a"; "b"; "c"])
 [*----------------------------------------------------------------------------*)
 
-let rec unzip = ()
-
+let rec unzip sez = 
+  let rec poma sez = 
+    match sez with
+    | [] -> []
+    | (a,b)::tail -> a::(poma tail)
+  
+  in
+  let rec pomb sez = 
+    match sez with
+    | [] -> []
+    | (a,b)::tail -> b::(pomb tail)
+  in
+  ((poma sez), (pomb sez))
 (*----------------------------------------------------------------------------*]
  Funkcija [unzip_tlrec] je repno rekurzivna različica funkcije [unzip].
  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -138,7 +165,26 @@ let rec unzip = ()
  - : int list * string list = ([0; 1; 2], ["a"; "b"; "c"])
 [*----------------------------------------------------------------------------*)
 
-let rec unzip_tlrec = ()
+let rec unzip_tlrec sez =
+  let rec poma sez acc = 
+    match sez with
+    | [] -> acc
+    | (a,b)::tail -> poma tail (acc @ [a])
+  in
+  let rec pomb sez acc = 
+    match sez with
+    | [] -> acc
+    | (a,b)::tail -> pomb tail (acc @ [b])
+  in
+  (poma sez [], pomb sez [])
+
+let rec unzip_tlrec sez = 
+  let rec pom sez seza sezb =
+    match sez with
+    | [] -> (seza, sezb)
+    | (a,b)::tail -> pom tail (seza@[a]) (sezb@[b])
+  in
+  pom sez [] []
 
 (*----------------------------------------------------------------------------*]
  Funkcija [loop condition f x] naj se izvede kot python koda:
@@ -153,7 +199,10 @@ let rec unzip_tlrec = ()
  - : int = 12
 [*----------------------------------------------------------------------------*)
 
-let rec loop = ()
+let rec loop con f x = 
+  match x with
+  | n when not (con n) -> x
+  | _ -> loop con f (f x)
 
 (*----------------------------------------------------------------------------*]
  Funkcija [fold_left_no_acc f list] sprejme seznam [x0; x1; ...; xn] in
@@ -165,7 +214,11 @@ let rec loop = ()
  - : string = "FICUS"
 [*----------------------------------------------------------------------------*)
 
-let rec fold_left_no_acc = ()
+let rec fold_left_no_acc f sez = 
+  match sez with
+  | [prvi;drugi] -> f prvi drugi
+  | prvi::drugi::tail -> fold_left_no_acc f ((f prvi drugi)::tail)
+  | _ -> failwith "kashwbkj"
 
 (*----------------------------------------------------------------------------*]
  Funkcija [apply_sequence f x n] vrne seznam zaporednih uporab funkcije [f] na
@@ -179,7 +232,14 @@ let rec fold_left_no_acc = ()
  - : int list = []
 [*----------------------------------------------------------------------------*)
 
-let rec apply_sequence = ()
+let rec apply_sequence f x n =
+  let rec pom f x n acc =
+    match n with
+    | z when (z < 0) -> []
+    | 0 -> acc
+    | _ -> pom f (f x) (n-1) (x::acc)
+  in
+  reverse (pom f x n [])
 
 (*----------------------------------------------------------------------------*]
  Funkcija [filter f list] vrne seznam elementov [list], pri katerih funkcija [f]
