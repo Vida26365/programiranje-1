@@ -250,8 +250,11 @@ let rec apply_sequence f x n =
  - : int list = [4; 5]
 [*----------------------------------------------------------------------------*)
 
-let rec filter = ()
-
+let rec filter f sez =
+  match sez with
+  | [] -> []
+  | prvi::tail when f prvi -> prvi:: (filter tail)
+  | _ -> filter tail
 (*----------------------------------------------------------------------------*]
  Funkcija [exists] sprejme seznam in funkcijo, ter vrne vrednost [true] čim
  obstaja element seznama, za katerega funkcija vrne [true] in [false] sicer.
@@ -264,7 +267,11 @@ let rec filter = ()
  - : bool = false
 [*----------------------------------------------------------------------------*)
 
-let rec exists = ()
+let rec exists f sez = 
+  match sez with
+  | [] -> false
+  | prvi::tail when f prvi -> true
+  | prvi_tail -> exists f tail
 
 (*----------------------------------------------------------------------------*]
  Funkcija [first f default list] vrne prvi element seznama, za katerega
