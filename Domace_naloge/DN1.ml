@@ -31,8 +31,16 @@ let filter_mapi f sez =
 
 
 (* IZOMORFIZMI_______________________________________________________________________________ *)
+type ('a , 'b) sum = In1 of 'a | In2 of 'b
+
 let phi1 (a,b) = (b,a)  
 let psi1 = phi1
+
+let phi2 (a : ('a, 'b) sum) : ('a, 'b) sum= 
+  match a with
+  |In1 x -> In2 x
+  |In2 x -> In1 x
+
 
 let phi3 (a, (b,c))= ((a, b), c) 
 let phi3 ((a, b), c) = (a, (b,c))
