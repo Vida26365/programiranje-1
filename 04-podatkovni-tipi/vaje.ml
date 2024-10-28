@@ -19,13 +19,17 @@
  Namig: Občudujte informativnost tipov funkcij.
 [*----------------------------------------------------------------------------*)
 
-type euro 
+type euro = | Euro of float
 
-type dollar 
+type dollar = | Dollar of float
 
-let dollar_to_euro _ = ()
+let dollar_to_euro  = 
+  function
+  | Dollar e -> Euro (0.92 *. e)
 
-let euro_to_dollar _ = ()
+let euro_to_dollar  = 
+  function
+  | Euro e -> Dollar (1.08 *. e)
 
 (* let primer_valute_1 = dollar_to_euro (Dollar 0.5) *)
 (* val primer_valute_1 : euro = Euro 0.4305 *)
@@ -39,9 +43,16 @@ let euro_to_dollar _ = ()
  Ocaml sam opozori, da je potrebno popraviti funkcijo `to_pound`.
 [*----------------------------------------------------------------------------*)
 
-type currency 
+type currency =
+  | Jen of float
+  | Funt of float
+  | Svedska_Krona of float
 
-let to_pound _ = ()
+let to_pound =
+  function
+  | Jen x -> Funt (0.005 *. x)
+  | Svedska_Krona x -> Funt (0.073 *. x)
+  | Funt x -> Funt x
 
 (* let primer_valute_2 = to_pound (Yen 100.) *)
 (* val primer_valute_2 : currency = Pound 0.700000000000000067 *)
@@ -69,9 +80,12 @@ let to_pound _ = ()
  Nato napišite testni primer, ki bi predstavljal `[5; true; false; 7]`.
 [*----------------------------------------------------------------------------*)
 
-type intbool_list 
+type intbool_list = 
+  | Prazen
+  | Int of int * intbool_list
+  | Bool of bool * intbool_list
 
-let test = ()
+let test = Int (5, Bool (true, Bool (false, Int (7, Prazen))))
 
 (*----------------------------------------------------------------------------*
  Funkcija `intbool_map f_int f_bool ib_list` preslika vrednosti `ib_list` v nov
@@ -79,23 +93,46 @@ let test = ()
  oz. `f_bool`.
 [*----------------------------------------------------------------------------*)
 
-let rec intbool_map _ _ _ = ()
+let rec intbool_map f_int f_bool = 
+  function
+  | Prazen -> Prazen
+  | Int (a, tail) -> Int ((f_int a), (intbool_map f_int f_bool tail))
+  | Bool (a, tail) -> Bool ((f_bool a), (intbool_map f_int f_bool tail))
 
 (*----------------------------------------------------------------------------*
  Funkcija `intbool_reverse` obrne vrstni red elementov `intbool_list` seznama.
  Funkcija je repno rekurzivna.
 [*----------------------------------------------------------------------------*)
 
-let rec intbool_reverse _ = ()
+let intbool_reverse sez = 
+  let rec pom sez acc = 
+    match sez with
+    | Prazen -> acc
+    | Bool (prvi, tail) -> pom tail (Bool (prvi, acc))
+    | Int (prvi, tail) -> pom tail (Int (prvi, acc))
+  in
+  pom sez Prazen
 
 (*----------------------------------------------------------------------------*
  Funkcija `intbool_separate ib_list` loči vrednosti `ib_list` v par `list`
  seznamov, kjer prvi vsebuje vse celoštevilske vrednosti, drugi pa vse logične
  vrednosti. Funkcija je repno rekurzivna in ohranja vrstni red elementov.
 [*----------------------------------------------------------------------------*)
+let reverse sez = 
+  let rec reverse_ sez acc =
+    match sez with
+    | [] -> acc
+    | prvi::tail -> reverse_ tail (prvi::acc) in
+  reverse_ sez []
 
-let rec intbool_separate _ = ()
-
+let rec intbool_separate sez = 
+  let rec pom int_list bool_list =
+    function
+    | Prazen -> (reverse int_list, reverse bool_list)
+    | Int (prvi, tail) -> pom (prvi::int_list) bool_list tail
+    | Bool (prvi, tail) -> pom int_list (prvi::bool_list) tail
+    in
+  pom [] [] sez
 (*----------------------------------------------------------------------------*
  ## Čarodeji
 
@@ -112,9 +149,15 @@ let rec intbool_separate _ = ()
  tip `specialisation`, ki loči med temi zaposlitvami.
 [*----------------------------------------------------------------------------*)
 
-type magic 
+type magic =
+ | Ogenj
+ | Led
+ | Arkana
 
-type specialisation 
+type specialisation =
+ | Zgodovinar
+ | Ucitelj
+ | Raziskovalec
 
 (*----------------------------------------------------------------------------*
  Vsak od čarodejev začne kot začetnik, nato na neki točki postane študent, na
@@ -130,13 +173,16 @@ type specialisation
  `jaina`, ki je četrto leto študentka magije ledu.
 [*----------------------------------------------------------------------------*)
 
-type status 
+type status =
+ | Zacetnik
+ | Student of magic * int
+ | Zaposlni of magic * specialisation
 
-type wizard 
+type wizard = {ime: string; trenuten_status: status}
 
-let professor  = ()
+let professor  = Zaposlni (Ogenj, Ucitelj)
 
-let jaina  = ()
+let jaina  = Student (Led, 4)
 
 (*----------------------------------------------------------------------------*
  Želimo prešteti koliko uporabnikov posamezne od vrst magije imamo na akademiji.
@@ -145,9 +191,13 @@ let jaina  = ()
  nov števec s posodobljenim poljem glede na vrednost `magic`.
 [*----------------------------------------------------------------------------*)
 
-type magic_counter 
+type magic_counter = {fire:int; frost:int; arcane:int}
 
-let update _ _ = ()
+let update c = 
+  function
+  | Ogenj -> {c with fire = c.fire + 1}
+  | Led -> {c with frost = c.frost + 1}
+  | Arkana -> {c with arcane = c.arcane + 1}
 
 (* let primer_carovniki_1 = update {fire = 1; frost = 1; arcane = 1} Arcane *)
 (* val primer_carovniki_1 : magic_counter = {fire = 1; frost = 1; arcane = 2} *)
