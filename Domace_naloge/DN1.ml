@@ -44,6 +44,29 @@ let phi2 (a : ('a, 'b) sum) : ('a, 'b) sum=
 
 let phi3 (a, (b,c))= ((a, b), c) 
 let phi3 ((a, b), c) = (a, (b,c))
+ 
+
+let phi4 (a: ('a, ('c, 'd) sum) sum) = 
+  match a with
+  | In1 x -> In1 (In1 x)
+  | In2 (In1 x) -> In1 (In2 x)
+  | In2 (In2 x) -> In2 x
+let psi4 (a: (('a, 'b) sum, 'c) sum) = 
+  match a with
+  | In1 (In1 x) -> In1 x
+  | In1 (In2 x) -> In2 (In1 x)
+  | In2 x -> In2 (In2 x)
+
+let phi5 (a, (b: ('a, 'b) sum)) = 
+  match b with
+  | In1 x -> In1 (a,b)
+  | In2 x -> In2 (a,b)
+
+let psi5 (el : ('a*'b, 'a*'c) sum) = 
+  match el with
+  | In1 (a, b) -> (a, In1 b)
+  | In2 (a, c) -> (a, In2 c)
+
 
 let phi7 f = (fun x -> fst (f x), fun x -> snd (f x))
 let psi7 (f, g) = fun x -> (f x, g x)

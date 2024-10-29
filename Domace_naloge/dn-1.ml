@@ -160,11 +160,13 @@ let phi4 (a: ('a, ('c, 'd) sum) sum) =
   | In1 x -> In1 (In1 x)
   | In2 (In1 x) -> In1 (In2 x)
   | In2 (In2 x) -> In2 x
+
+
 let psi4 (a: (('a, 'b) sum, 'c) sum) = 
   match a with
   | In1 (In1 x) -> In1 x
   | In1 (In2 x) -> In2 (In1 x)
-  | In2 x -> In2 x
+  | In2 x -> In2 (In2 x)
 
 (*----------------------------------------------------------------------------*
  ### $A \times (B + C) \cong (A \times B) + (A \times C)$
@@ -185,15 +187,20 @@ let psi5 (el : ('a*'b, 'a*'c) sum) =
  ### $A^{B + C} \cong A^B \times A^C$
 [*----------------------------------------------------------------------------*)
 
-let phi6 _ = ()
-let psi6 _ = ()
+let phi6 (f : ('b, 'c) sum -> 'a) = ((fun x -> f (In1 x)), (fun x -> f (In2 x)))
+  
+let psi6 (f1, f2) = 
+  fun x ->
+    match x with
+    | In1 x -> f1 x
+    | In2 x -> f2 x
 
 (*----------------------------------------------------------------------------*
  ### $(A \times B)^C \cong A^C \times B^C$
 [*----------------------------------------------------------------------------*)
 
-let phi7 _ = ()
-let psi7 _ = ()
+let phi7 (f : 'c -> ('a * 'b)) = ((fun x -> fst (f x)), (fun x -> snd (f x)))
+let psi7 (f, g) = fun x -> (f x, g x)
 
 (*----------------------------------------------------------------------------*
  ## Polinomi
@@ -216,7 +223,13 @@ type polinom = int list
  koeficientov odstrani odvečne ničle.
 [*----------------------------------------------------------------------------*)
 
-let pocisti _ = ()
+let rec pocisti (sez: polinom) : polinom = 
+  match (List.rev sez) with
+  |[] -> []
+  |prvi::tail ->
+    match prvi with
+    | 0-> pocisti tail
+    | _ -> sez
 
 let primer_3_1 = pocisti [1; -2; 3; 0; 0]
 (* val primer_3_1 : int list = [1; -2; 3] *)
@@ -229,8 +242,22 @@ let primer_3_1 = pocisti [1; -2; 3; 0; 0]
  Napišite funkcijo `( +++ ) : polinom -> polinom -> polinom`, ki sešteje dva
  polinoma.
 [*----------------------------------------------------------------------------*)
+let rec make n a =
+  match n with
+  | 0 -> []
+  | _ -> a @ (make (n-1) a)
 
-let ( +++ ) _ _ = ()
+let ( +++ ) (p:polinom) (q:polinom) =
+  let rec dodaj h =
+    let manj = min (List.length p) (List.length q) in
+    let vec = max (List.length p) (List.length q) in
+    match (List.length h) with
+    | x when x = manj -> h @ (make (vec -manj) [0])
+    | _ -> h 
+  in
+  let v1 = dodaj p in
+  let v2 = dodaj q in
+  pocisti (List.map2 (fun x y -> x+y) v1 v2)
 
 let primer_3_2 = [1; -2; 3] +++ [1; 2]
 (* val primer_3_2 : int list = [2; 0; 3] *)
@@ -247,7 +274,11 @@ let primer_3_3 = [1; -2; 3] +++ [1; 2; -3]
  polinoma.
 [*----------------------------------------------------------------------------*)
 
-let ( *** ) _ _ = ()
+let rec ( *** ) p q =
+  match p with
+  |[] -> []
+  |prvi::tail -> pocisti (List.map (fun x -> prvi*x) q) +++ ([0] @ (tail *** q))
+
 
 let primer_3_4 = [1; 1] *** [1; 1] *** [1; 1]
 (* val primer_3_4 : int list = [1; 3; 3; 1] *)
@@ -264,7 +295,10 @@ let primer_3_5 = [1; 1] *** [1; -1]
  polinoma v danem argumentu.
 [*----------------------------------------------------------------------------*)
 
-let vrednost _ _ = ()
+let rec vrednost (sez:polinom) a = 
+  match sez with
+  | [] -> 0
+  | prvi::tail -> prvi + a * vrednost tail a
 
 let primer_3_6 = vrednost [1; -2; 3] 2
 (* val primer_3_6 : int = 9 *)
@@ -277,7 +311,16 @@ let primer_3_6 = vrednost [1; -2; 3] 2
  Napišite funkcijo `odvod : polinom -> polinom`, ki izračuna odvod polinoma.
 [*----------------------------------------------------------------------------*)
 
-let odvod _ = ()
+let odvod (sez: polinom) =
+  let rec seznamaj sez i =
+    match sez with
+    | [] -> []
+    |x when (List.length x) = i -> [i]
+    | prvi::tail -> [i] @ (seznamaj tail (i+1)) in 
+  match sez with
+  | [] -> []
+  | prvi::tail -> pocisti (List.map2 ( * ) tail (seznamaj sez 1))
+
 
 let primer_3_7 = odvod [1; -2; 3]
 (* val primer_3_7 : int list = [-2; 6] *)
@@ -292,7 +335,57 @@ let primer_3_7 = odvod [1; -2; 3]
  - 2 x + 1"`. Pozorni bodite, da izpis začnete z vodilnim členom.
 [*----------------------------------------------------------------------------*)
 
-let izpis _ = ()
+let rec izpis (sez:polinom) =
+
+  let rec seznamaj sez i =
+    match sez with
+    | [] -> []
+    | prvi::tail -> 
+      match i with
+      | 0 -> [""] @ (seznamaj tail (i+1))
+      | 1 -> ["x"] @ (seznamaj tail (i+1))
+      | _ -> ["x^" ^ (string_of_int i)] @ (seznamaj tail (i+1))
+    in
+
+  let funkcioniraj a xi =
+    match a with
+    | 0 -> ""
+    | 1 -> 
+      (match xi with
+      | "" ->  " + 1"
+      | _ -> " + "  ^  xi)
+    | -1 ->
+      (match xi with
+      | "" ->  " - 1"
+      | _ -> " - "  ^  xi)
+    |x when x < 0 -> " - "  ^ (string_of_int (abs a))^ xi
+    |x when x > 0 -> " + "  ^ (string_of_int (abs a))^ xi
+    |_ -> ""
+    
+  in
+
+  let funkcija_prvih a = 
+    let xi = (List.hd (List.rev (seznamaj sez 0))) in
+    match a with
+    |0 -> ""
+    | 1 -> xi
+    | -1 -> "-"  ^  xi
+    |x when x < 0 -> "-"  ^ (string_of_int a)^ xi
+    |x when x > 0 ->(string_of_int a)^ xi 
+    |_ -> ""
+  in
+
+  let skoraj_koncni_list = List.rev (List.map2 funkcioniraj sez (seznamaj sez 0))
+  in
+  match skoraj_koncni_list with
+  |[] -> ""
+  |_::tail ->
+    let prvi::_ = List.rev sez in
+    (funkcija_prvih prvi) ^ (String.concat "" tail)
+
+  
+
+
 
 let primer_3_8 = izpis [1; 2; 1]
 (* val primer_3_8 : string = "x² + 2 x + 1" *)
@@ -363,8 +456,8 @@ let primer_4_2 =
  odvoda v danem argumentu.
 [*----------------------------------------------------------------------------*)
 
-let vrednost _ _ = ()
-let odvod _ _ = ()
+let vrednost (f, _) a = f a
+let odvod (_, f) a = f a
 
 (*----------------------------------------------------------------------------*
  ### Osnovne funkcije
@@ -375,8 +468,8 @@ let odvod _ _ = ()
  odvedljiva`, ki predstavljata konstantno in identično funkcijo.
 [*----------------------------------------------------------------------------*)
 
-let konstanta _ = ()
-let identiteta = ()
+let konstanta (a:float) = ((fun x -> a), (fun x -> 0.))
+let identiteta = (fun (x:float)-> x), (fun x -> x)
 
 (*----------------------------------------------------------------------------*
  ### Produkt in kvocient
@@ -388,7 +481,9 @@ let identiteta = ()
  kvocient dveh odvedljivih funkcij.
 [*----------------------------------------------------------------------------*)
 
-let ( **. ) _ _ = ()
+let ( **. ) (f, f_) (g, g_) = ((fun x -> (f x) *. (g x)), (fun x -> (f_ x)*.(g x) +. (f x)*.(g_ x)))
+
+let ( //. ) (f, f_) (g, g_) = ((fun x -> (f x) /. (g x)), (fun x -> ((f_ x)*.(g x) -. (f x)*.(g_ x)) /. (g x) *. (g x)))
 
 let kvadrat = identiteta **. identiteta
 (* val kvadrat : odvedljiva = (<fun>, <fun>) *)
@@ -402,7 +497,7 @@ let kvadrat = identiteta **. identiteta
  predstavlja kompozitum dveh odvedljivih funkcij.
 [*----------------------------------------------------------------------------*)
 
-let ( @@. ) _ _ = ()
+let ( @@. ) (f, f_) (g, g_) = ((fun x -> f (g x)), (fun x -> f_ (g x) *. g_ x))
 
 (* POZOR: Primer je zaenkrat zakomentiran, saj ob prazni rešitvi nima tipa *)
 (* let vedno_ena = (kvadrat @@. sinus) ++. (kvadrat @@. kosinus) *)
@@ -458,7 +553,13 @@ let crka i = Char.chr (i + Char.code 'A')
  z danim ključem. Vse znake, ki niso velike tiskane črke, pustimo pri miru.
 [*----------------------------------------------------------------------------*)
 
-let sifriraj _ _ = ()
+let sifriraj kljuc bes = 
+  let crkuj c = 
+    match (indeks c) with
+    | x when 0 <= x && x < 26 -> kljuc.[x]
+    | _ -> c
+  in
+  String.map crkuj bes
 
 let primer_5_1 = sifriraj quick_brown_fox "HELLO, WORLD!"
 (* val primer_5_1 : string = "KUNNJ, ZJSNQ!" *)
@@ -477,9 +578,17 @@ let primer_5_3 = "VENI, VIDI, VICI" |> sifriraj rot13 |> sifriraj rot13
  Napišite funkcijo `inverz : string -> string`, ki iz ključa izračuna njegov
  inverz.
 [*----------------------------------------------------------------------------*)
+let abeceda = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+(* let inverz kljuc = String.map (fun c -> abeceda.[String.index kljuc c]) abeceda *)
+let inverz kljuc = 
+  let f c = 
+    match (String.index abeceda c) with
+    | x when x< (String.length kljuc)-> abeceda.[String.index kljuc c]
+    | _ -> ' '
+  in
+  String.sub  (String.map f abeceda) 0 (String.length kljuc)
 
-let inverz _ = ()
-
+  
 let primer_5_4 = inverz quick_brown_fox
 (* val primer_5_4 : string = "VIGYCMZBFOHUPLSQDJRAETKNXW" *)
 
@@ -509,7 +618,7 @@ let besede = "the of to and a in is it you that he was for on are with as i his 
  pretvorjene v velike tiskane črke.
 [*----------------------------------------------------------------------------*)
 
-let slovar = []
+let slovar = String.split_on_char ' ' (String.uppercase_ascii besede)
 
 let primer_5_7 = take 42 slovar
 (* val primer_5_7 : string list =
@@ -539,7 +648,18 @@ let primer_5_7 = take 42 slovar
  črkama).
 [*----------------------------------------------------------------------------*)
 
-let dodaj_zamenjavo _ _ = ()
+let dodaj_zamenjavo kljuc (a, b) = 
+  match kljuc.[indeks a] with
+  | '_' -> 
+    (match (String.contains kljuc b)  with
+    | true -> None
+    | false -> Some (String.mapi (fun i c ->
+      match i with
+      | y when y = (indeks a)-> b
+      | _ -> c
+       ) kljuc ))
+  | x when x = b -> Some kljuc
+  | _ -> None
 
 let primer_5_9 = dodaj_zamenjavo "AB__E" ('C', 'X')
 (* val primer_5_9 : string option = Some "ABX_E" *)
@@ -560,7 +680,17 @@ let primer_5_11 = dodaj_zamenjavo "ABY_E" ('C', 'E')
  prvo besedo preslikajo v drugo.
 [*----------------------------------------------------------------------------*)
 
-let dodaj_zamenjave _ _ = ()
+let dodaj_zamenjave kljuc (bes, bas) = 
+  let sez = List.combine (List.of_seq (String.to_seq bes))  (List.of_seq (String.to_seq bas)) in
+  let rec pom kljuc sez = 
+    match sez with
+    | [] -> Some kljuc
+    | prvi::tail -> 
+      (match (dodaj_zamenjavo kljuc prvi) with
+      | None -> None
+      | Some x -> pom x tail)
+    in
+    pom kljuc sez
 
 let primer_5_12 = dodaj_zamenjave "__________________________" ("HELLO", "KUNNJ")
 (* val primer_5_12 : string option = Some "____U__K___N__J___________" *)
@@ -582,7 +712,20 @@ let primer_5_14 = dodaj_zamenjave "ABCDE_____________________" ("HELLO", "KUNNJ"
  od besed v slovarju.
 [*----------------------------------------------------------------------------*)
 
-let mozne_razsiritve _ _ _ = []
+let mozne_razsiritve kljuc bes sez = 
+  let rec pom sez acc= 
+    match sez with
+    | [] -> acc
+    | prvi::tail -> 
+      (match (String.length prvi) with
+      | x when x = (String.length bes) -> 
+        (match (dodaj_zamenjave kljuc (bes, prvi)) with
+        | None -> pom tail acc
+        | Some x -> pom tail (x::acc))
+      | _ -> pom tail acc)
+    in
+    pom sez []
+
 
 let primer_5_15 =
   slovar
@@ -612,7 +755,13 @@ let primer_5_15 =
  vrne `None`, če ni mogoče najti nobenega ustreznega ključa.
 [*----------------------------------------------------------------------------*)
 
-let odsifriraj _ = ()
+let odsifriraj niz = 
+  let niz_sez = String.split_on_char ' ' niz in
+  let rec rekurzija_po_nizu niz acc = 
+    let rec rekurzija_po_moznostih moznosti =
+      match moznosti with
+      | [] -> None
+      | prvi::tail -> reku
 
 let primer_5_16 = sifriraj quick_brown_fox "THIS IS A VERY HARD PROBLEM"
 (* val primer_5_16 : string = "VKBO BO T AUSD KTSQ MSJHNUF" *)
