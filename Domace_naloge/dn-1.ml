@@ -468,8 +468,8 @@ let odvod (_, f) a = f a
  odvedljiva`, ki predstavljata konstantno in identično funkcijo.
 [*----------------------------------------------------------------------------*)
 
-let konstanta (a:float) = ((fun x -> a), (fun x -> 0.))
-let identiteta = (fun (x:float)-> x), (fun x -> x)
+let konstanta (a:float) = ((fun x:float -> a), (fun x:float -> 0.))
+let identiteta = (fun (x:float)-> x), (fun x:float -> x)
 
 (*----------------------------------------------------------------------------*
  ### Produkt in kvocient
@@ -757,11 +757,46 @@ let primer_5_15 =
 
 let odsifriraj niz = 
   let niz_sez = String.split_on_char ' ' niz in
-  let rec rekurzija_po_nizu niz acc = 
-    let rec rekurzija_po_moznostih moznosti =
+
+  let rec dobivanje_kljuca kljuc niz_sez = 
+    match niz_sez with
+    | [] -> None
+    | beseda::ostl_niz ->
+      let moznosti = mozne_razsiritve kljuc beseda slovar in
       match moznosti with
       | [] -> None
-      | prvi::tail -> reku
+
+
+
+      let rec eliminiranje_moznosti acc = 
+        match moznosti with
+        | [] -> eliminiranje_moznosti 
+        | prva::ostale -> dobivanje_kljuca prva ostl_niz
+
+
+
+
+
+
+
+  (* let rec rekurzija_po_nizu kljuc niz_sez = 
+    match niz_sez with
+    | [] -> None
+    | beseda::ostl_niz ->
+      let moznosti = mozne_razsiritve kljuc beseda slovar in
+      match moznosti with
+      | [] -> None 
+      | prva::[] -> Some prva
+      | prva::druga::ostale_moznosti ->
+        match ostale_moznosti with
+        | [] -> rekurzija_po_nizu prva ostale_moznosti
+        | druga::ostostale_moznosti -> rekurzija_po_nizu prva ostl_niz *)
+
+
+      (* (let rec rekurzija_po_moznostih moznosti =
+        match moznosti with
+        | [] -> None
+        | prvi::tail -> rekurzija_po_nizu prvi niz) *)
 
 let primer_5_16 = sifriraj quick_brown_fox "THIS IS A VERY HARD PROBLEM"
 (* val primer_5_16 : string = "VKBO BO T AUSD KTSQ MSJHNUF" *)

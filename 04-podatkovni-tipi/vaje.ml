@@ -199,7 +199,7 @@ let update c =
   | Led -> {c with frost = c.frost + 1}
   | Arkana -> {c with arcane = c.arcane + 1}
 
-(* let primer_carovniki_1 = update {fire = 1; frost = 1; arcane = 1} Arcane *)
+let primer_carovniki_1 = update {fire = 1; frost = 1; arcane = 1} Arkana
 (* val primer_carovniki_1 : magic_counter = {fire = 1; frost = 1; arcane = 2} *)
 
 (*----------------------------------------------------------------------------*
@@ -207,9 +207,19 @@ let update c =
  različnih vrst magij.
 [*----------------------------------------------------------------------------*)
 
-let count_magic _ = ()
+let count_magic sez = 
+  let c = {fire=0; frost=0; arcane=0} in
+  let rec pom sez c = 
+    match sez with
+    | [] -> c
+    | prvi::tail -> 
+      match prvi with
+      | Zacetnik -> pom tail c
+      | Student (mag, _) | Zaposlni (mag, _) -> pom tail (update c mag) 
+  in
+  pom sez c
 
-(* let primer_carovniki_2 = count_magic [professor; professor; professor] *)
+let primer_carovniki_2 = count_magic [professor; professor; professor]
 (* val primer_carovniki_2 : magic_counter = {fire = 3; frost = 0; arcane = 0} *)
 
 (*----------------------------------------------------------------------------*
@@ -222,8 +232,21 @@ let count_magic _ = ()
  `None`.
 [*----------------------------------------------------------------------------*)
 
-let find_candidate _ _ _ = ()
+let rec find_candidate mag spec sez = 
+  let stevilka = 
+    match spec with
+      | Zgodovinar -> 3
+      | Raziskovalec -> 4
+      | Ucitelj -> 5
+  in
+  match sez with
+  | [] -> None
+  | prvi::tail -> 
+    match prvi with
+    | Student (mc, st) when st >= stevilka && mc = mag -> Some prvi
+    | _ -> find_candidate mag spec tail
+      
 
-(* let primer_carovniki_3 =
-  find_candidate Frost Researcher [professor; jaina] *)
+let primer_carovniki_3 =
+  find_candidate Led Raziskovalec [professor; jaina]
 (* val primer_carovniki_3 : string option = Some "Jaina" *)
