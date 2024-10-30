@@ -137,7 +137,7 @@ let psi1 = phi1
  ### $A + B \cong B + A$
 [*----------------------------------------------------------------------------*)
 
-let phi2 (a : ('a, 'b) sum) : ('a, 'b) sum= 
+let phi2 (a : ('a, 'b) sum)= 
   match a with
   |In1 x -> In2 x
   |In2 x -> In1 x
@@ -228,7 +228,7 @@ let rec pocisti (sez: polinom) : polinom =
   |[] -> []
   |prvi::tail ->
     match prvi with
-    | 0-> pocisti tail
+    | 0 -> pocisti (List.rev tail)
     | _ -> sez
 
 let primer_3_1 = pocisti [1; -2; 3; 0; 0]
@@ -336,6 +336,7 @@ let primer_3_7 = odvod [1; -2; 3]
 [*----------------------------------------------------------------------------*)
 
 let rec izpis (sez:polinom) =
+  let lepota = List.nth ['⁰'; '¹'; '²'; '³'; '⁴'; '⁵'; '⁶'; '⁷'; '⁸'; '⁹']
 
   let rec seznamaj sez i =
     match sez with
@@ -380,8 +381,9 @@ let rec izpis (sez:polinom) =
   match skoraj_koncni_list with
   |[] -> ""
   |_::tail ->
-    let prvi::_ = List.rev sez in
-    (funkcija_prvih prvi) ^ (String.concat "" tail)
+    match (List.rev sez) with
+    | [] -> ""
+    | prvi::_ -> (funkcija_prvih prvi) ^ (String.concat "" tail)
 
   
 
@@ -760,43 +762,23 @@ let odsifriraj niz =
 
   let rec dobivanje_kljuca kljuc niz_sez = 
     match niz_sez with
-    | [] -> None
+    | [] -> Some kljuc
     | beseda::ostl_niz ->
-      let moznosti = mozne_razsiritve kljuc beseda slovar in
-      match moznosti with
-      | [] -> None
-
-
-
-      let rec eliminiranje_moznosti acc = 
-        match moznosti with
-        | [] -> eliminiranje_moznosti 
-        | prva::ostale -> dobivanje_kljuca prva ostl_niz
-
-
-
-
-
-
-
-  (* let rec rekurzija_po_nizu kljuc niz_sez = 
-    match niz_sez with
-    | [] -> None
-    | beseda::ostl_niz ->
-      let moznosti = mozne_razsiritve kljuc beseda slovar in
-      match moznosti with
-      | [] -> None 
-      | prva::[] -> Some prva
-      | prva::druga::ostale_moznosti ->
-        match ostale_moznosti with
-        | [] -> rekurzija_po_nizu prva ostale_moznosti
-        | druga::ostostale_moznosti -> rekurzija_po_nizu prva ostl_niz *)
-
-
-      (* (let rec rekurzija_po_moznostih moznosti =
-        match moznosti with
+      (let rec rekurzija_po_moznostih moznosti= 
+        (match moznosti with
         | [] -> None
-        | prvi::tail -> rekurzija_po_nizu prvi niz) *)
+        | prva::ostale ->
+          (match (dobivanje_kljuca prva ostl_niz) with
+          | None -> rekurzija_po_moznostih ostale
+          | Some kljc -> Some kljc))
+        in
+      rekurzija_po_moznostih (mozne_razsiritve kljuc beseda slovar))
+    in
+
+  match (dobivanje_kljuca "__________________________" niz_sez) with
+  | None -> None
+  | Some x -> Some (sifriraj x niz)
+        
 
 let primer_5_16 = sifriraj quick_brown_fox "THIS IS A VERY HARD PROBLEM"
 (* val primer_5_16 : string = "VKBO BO T AUSD KTSQ MSJHNUF" *)
