@@ -336,8 +336,11 @@ let primer_3_7 = odvod [1; -2; 3]
 [*----------------------------------------------------------------------------*)
 
 let rec izpis (sez:polinom) =
-  let lepota = List.nth ['⁰'; '¹'; '²'; '³'; '⁴'; '⁵'; '⁶'; '⁷'; '⁸'; '⁹']
-
+  let rec lepota x = 
+    match (x/10) with
+    | 0 -> List.nth ["⁰"; "¹"; "²"; "³"; "⁴"; "⁵"; "⁶"; "⁷"; "⁸"; "⁹"] x
+    | n -> (List.nth ["⁰"; "¹"; "²"; "³"; "⁴"; "⁵"; "⁶"; "⁷"; "⁸"; "⁹"] n) ^ (lepota (x mod 10))
+  in
   let rec seznamaj sez i =
     match sez with
     | [] -> []
@@ -345,7 +348,7 @@ let rec izpis (sez:polinom) =
       match i with
       | 0 -> [""] @ (seznamaj tail (i+1))
       | 1 -> ["x"] @ (seznamaj tail (i+1))
-      | _ -> ["x^" ^ (string_of_int i)] @ (seznamaj tail (i+1))
+      | _ -> ["x" ^ (lepota i)] @ (seznamaj tail (i+1))
     in
 
   let funkcioniraj a xi =
@@ -471,7 +474,7 @@ let odvod (_, f) a = f a
 [*----------------------------------------------------------------------------*)
 
 let konstanta (a:float) = ((fun x:float -> a), (fun x:float -> 0.))
-let identiteta = (fun (x:float)-> x), (fun x:float -> x)
+let identiteta = (fun (x:float)-> x), (fun x:float -> 1.)
 
 (*----------------------------------------------------------------------------*
  ### Produkt in kvocient
@@ -487,7 +490,7 @@ let ( **. ) (f, f_) (g, g_) = ((fun x -> (f x) *. (g x)), (fun x -> (f_ x)*.(g x
 
 let ( //. ) (f, f_) (g, g_) = ((fun x -> (f x) /. (g x)), (fun x -> ((f_ x)*.(g x) -. (f x)*.(g_ x)) /. (g x) *. (g x)))
 
-let kvadrat = identiteta **. identiteta
+let kvadrat :odvedljiva = identiteta **. identiteta
 (* val kvadrat : odvedljiva = (<fun>, <fun>) *)
 
 (*----------------------------------------------------------------------------*
@@ -499,18 +502,18 @@ let kvadrat = identiteta **. identiteta
  predstavlja kompozitum dveh odvedljivih funkcij.
 [*----------------------------------------------------------------------------*)
 
-let ( @@. ) (f, f_) (g, g_) = ((fun x -> f (g x)), (fun x -> f_ (g x) *. g_ x))
+let ( @@. ) (f, f_) (g, g_) = ((fun x -> f (g x)), (fun x -> (f_ (g x)) *. (g_ x)))
 
 (* POZOR: Primer je zaenkrat zakomentiran, saj ob prazni rešitvi nima tipa *)
-(* let vedno_ena = (kvadrat @@. sinus) ++. (kvadrat @@. kosinus) *)
+let vedno_ena = (kvadrat @@. sinus) ++. (kvadrat @@. kosinus)
 (* val vedno_ena : odvedljiva = (<fun>, <fun>) *)
 
 (* POZOR: Primer je zaenkrat zakomentiran, saj brez vedno_ena ne deluje *)
-(* let primer_4_3 = vrednost vedno_ena 12345. *)
+let primer_4_3 = vrednost vedno_ena 12345.
 (* val primer_4_3 : float = 0.999999999999999889 *)
 
 (* POZOR: Primer je zaenkrat zakomentiran, saj brez vedno_ena ne deluje *)
-(* let primer_4_4 = odvod vedno_ena 12345. *)
+let primer_4_4 = odvod vedno_ena 12345.
 (* val primer_4_4 : float = 0. *)
 
 (*----------------------------------------------------------------------------*
@@ -630,7 +633,7 @@ let primer_5_7 = take 42 slovar
    "SOME"; "WE"; "CAN"; "OUT"; "OTHER"; "WERE"; "ALL"; "THERE"; "WHEN"; "UP"] *)
 
 (* POZOR: Primer je zaenkrat zakomentiran, saj ob prazni rešitvi sproži izjemo *)
-(* let primer_5_8 = List.nth slovar 321 *)
+let primer_5_8 = List.nth slovar 321
 (* val primer_5_8 : string = "MEASURE" *)
 
 (*----------------------------------------------------------------------------*
@@ -726,7 +729,7 @@ let mozne_razsiritve kljuc bes sez =
         | Some x -> pom tail (x::acc))
       | _ -> pom tail acc)
     in
-    pom sez []
+    List.rev (pom sez [])
 
 
 let primer_5_15 =
