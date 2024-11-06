@@ -654,17 +654,21 @@ let primer_5_8 = List.nth slovar 321
 [*----------------------------------------------------------------------------*)
 
 let dodaj_zamenjavo kljuc (a, b) = 
-  match kljuc.[indeks a] with
-  | '_' -> 
-    (match (String.contains kljuc b)  with
-    | true -> None
-    | false -> Some (String.mapi (fun i c ->
-      match i with
-      | y when y = (indeks a)-> b
-      | _ -> c
-       ) kljuc ))
-  | x when x = b -> Some kljuc
-  | _ -> None
+  match (a,b) with
+  | _ when (a < 'A' || a > 'Z' || b < 'A' || b > 'Z') && a = b -> Some kljuc
+  | _ when (a < 'A' || a > 'Z' || b < 'A' || b > 'Z') && a <> b -> None
+  | _ -> 
+    match kljuc.[indeks a] with
+    | '_' -> 
+      (match (String.contains kljuc b)  with
+      | true -> None
+      | false -> Some (String.mapi (fun i c ->
+        match i with
+        | y when y = (indeks a)-> b
+        | _ -> c
+        ) kljuc ))
+    | x when x = b -> Some kljuc
+    | _ -> None
 
 let primer_5_9 = dodaj_zamenjavo "AB__E" ('C', 'X')
 (* val primer_5_9 : string option = Some "ABX_E" *)
