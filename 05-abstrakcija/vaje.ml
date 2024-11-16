@@ -250,5 +250,8 @@ module Polar : COMPLEX = struct
     | _ -> x.mgn = 0 && y.mgn = 0 -> true
     | _ -> x.mgn = y.mgn && (pretvori y.arg) = (pretvori x.arg)
   (* Dodajte manjkajoče! *)
+  
+  let zero = {magn = 0.; arg = 0.}
 
+  let one = 
 end
