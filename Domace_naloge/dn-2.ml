@@ -530,7 +530,7 @@ let compare stt (a:int) (b:int) =
   match a with
   | _ when a = b -> { stt with zero = true; carry = false }
   | _ when a < b -> { stt with zero = false; carry = true}
-  | _ -> stt
+  | _ -> { stt with zero = false; carry = false}
 
 let primer_izvajanje_12 =
   compare empty 24 42
@@ -618,7 +618,7 @@ let run_instruction stt =
   | INC reg -> perform_unop succ stt reg |> proceed
   | DEC reg -> perform_unop (fun x -> x-1) stt reg |> proceed
   | MUL exp -> perform_binop ( * ) stt A exp |> proceed
-  | DIV exp -> perform_binop ( * ) stt A exp |> proceed
+  | DIV exp -> perform_binop ( / ) stt A exp |> proceed
   (* Pozor, OCaml land/lor/lxor interpretira kot simbole, zato jih pišemo infiksno! *)
   | AND (reg, exp) -> perform_binop ( land ) stt reg exp |> proceed
   | OR (reg, exp) -> perform_binop ( lor ) stt reg exp |> proceed
@@ -632,8 +632,8 @@ let run_instruction stt =
   | JBE add -> conditional_jump stt add (stt.carry || stt.zero)
   | JE add -> conditional_jump stt add stt.zero
   | JNE add -> conditional_jump stt add (not stt.zero)
-  | CALL add -> call stt add |> proceed
-  | RET -> return stt |> proceed
+  | CALL add -> call stt add
+  | RET -> return stt
   | PUSH exp -> push_stack stt (read_expression stt exp) |> proceed
   | POP reg ->
       let n, st' = pop_stack stt in
@@ -653,7 +653,7 @@ let rec run_program stt =
   match read_instruction stt with
   | None -> stt
   | Some HLT -> stt
-  | Some x -> run_instruction stt x
+  | Some x -> run_program (run_instruction stt x)
 
 let primer_izvajanje_16 =
   fibonacci 10
