@@ -1,5 +1,9 @@
 (* 
 Natančno definirajte pogoje, da funkcija `f` uredi seznam. 
+imamo < in = ali <=
+f: -> a' Lsit -> a' List
+vsak i. x[i-1] <= x[i]
+f x je permutacija x
 *)
 
 (*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*]
@@ -17,6 +21,11 @@ Natančno definirajte pogoje, da funkcija `f` uredi seznam.
  # insert 7 [];;
  - : int list = [7]
 [*----------------------------------------------------------------------------*)
+let rec insert y sez =
+  match sez with
+  | [] -> y::[]
+  | x::xs when y <= x -> y :: x ::xs
+  | x::xs -> x:: (insert y xs)
 
 
 (*----------------------------------------------------------------------------*]
@@ -24,6 +33,13 @@ Natančno definirajte pogoje, da funkcija `f` uredi seznam.
  zaporedoma vstavlja vse elemente seznama v prazen seznam.
 [*----------------------------------------------------------------------------*)
 
+let insert_sort sez =
+  let rec pom sez acc =
+    match sez with
+    | [] -> acc
+    | x::xs -> pom xs (insert x acc) 
+  in
+  pom sez []
 
 
 (*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*]
@@ -43,6 +59,46 @@ Natančno definirajte pogoje, da funkcija `f` uredi seznam.
  dodati na konec urejenega podseznama.
  (Hitreje je obrniti vrstni red seznama kot na vsakem koraku uporabiti [@].)
 [*-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=*)
+ 
+let zizbiranjem sez = 
+  let mi sez = 
+    match sez with
+    | [] -> []
+    | x::xs -> List.fold_left min x xs
+  in
+  let rec nneur neur acc =
+    let m = mi neur in
+    match neur with
+    | [] -> acc
+    | x::xs when x = m -> List.rev acc @ xs
+    | x::xs -> nneur xs (x::acc)
+  in
+  let rec pom ur neur =
+    match neur with
+    | [] -> ur
+    | x::xs -> pom (x::ur) (nneur neur [])
+  in
+  List.rev (pom sez [])
+
+
+
+
+(* let izbiranjem sez =
+  let acc = 
+    match sez with
+    | [] -> 0
+    | x::_ -> x
+  in
+  let rec najmanjsi sez acc =
+    match sez with
+    | [] -> acc
+    | x::xs when x < acc -> najmanjsi xs x
+    | _::xs -> najmanjsi xs acc
+  in
+  let pom ur neur = 
+    match neur with
+    | [] -> ur
+    | _ -> pom  najmanjsi::ur  *)
 
 
 (*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*]
