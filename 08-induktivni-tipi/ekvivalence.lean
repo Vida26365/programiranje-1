@@ -264,3 +264,49 @@ theorem size_mirror {A : Type} {t : tree A} : size (mirror t) = size t := by
     simp [size]
     rw [ihl, ihr]
     rw [comm3]
+
+
+--- Indukcija na pomožnih funkcijah z akumulatorjem
+
+theorem concat2 : concat xs (x :: ys) = concat (concat (xs) [x]) ys :=
+  by
+    induction xs with
+    | nil => simp [concat]
+    | cons hd tl ih =>
+    simp [concat]
+    assumption
+
+-- Definirajte repno rekurzivno funkcijo, ki obrne seznam
+def reverse' {A : Type} (xs : List A): List A:=
+  let rec aux: List A -> List A -> List A
+    | [], acc => acc
+    | prvi::tail, acc => aux tail (prvi::acc)
+  aux xs []
+
+def reverse'' {A : Type} : List A -> List A :=
+  fun xs =>
+  match xs with
+  | [] => []
+  | prvi::tail => (reverse'' tail) ++ [prvi]
+
+-- Dokažite, da je vaša funkcija pravilna
+theorem reverse_eq_reverse'.aux {A : Type} : ∀ {xs acc : List A}, (reverse'' xs) ++ acc  = reverse'.aux xs acc:=
+  by
+    intro xs
+    induction xs with
+    | nil =>
+    simp [reverse'']
+    simp [reverse'.aux]
+    | cons hd tl ih =>
+    simp [reverse'', reverse'.aux]
+    simp [ih]
+
+theorem reverse_eq_reverse' {A : Type} : ∀ {xs : List A}, reverse'' xs = reverse' xs :=
+  by
+    intro xs
+    induction xs with
+    | nil =>
+      simp [reverse', reverse'', reverse'.aux]
+    | cons tl hd ih =>
+      simp [reverse', reverse'', reverse'.aux]
+      exact reverse_eq_reverse'.aux

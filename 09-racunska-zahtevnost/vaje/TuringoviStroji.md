@@ -9,6 +9,8 @@ Definirajte k-tračni turingov stroj
 Dan je jezik $J = \{ xyz | x, y, z \in \{0, 1\}^*, |x| = |y| = |z|, x (xor) y = z \}$.
 
 1. Sestavite deterministični n-tračni turingov stroj, ki preveri, ali je dana beseda v jeziku $J$.
+- 3-tračni stroj
+- prepišemo 
 
 2. Sestavite deterministični enotračni turingov stroj, ki preveri, ali je dana beseda v jeziku $J$.
 

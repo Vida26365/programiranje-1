@@ -9,11 +9,21 @@ set_option autoImplicit false
  deljenja, nato pa še v običajni obliki).
 ------------------------------------------------------------------------------/
 
-def vsota_prvih : Nat → Nat :=
-  sorry
+def vsota_prvih  : Nat -> Nat :=
+fun n =>
+  match n with
+  | Nat.zero => Nat.zero
+  | Nat.succ k => n + vsota_prvih k
 
 theorem gauss : (n : Nat) → 2 * vsota_prvih n = n * (n + 1) := by
-  sorry
+  intro n
+  induction n with
+  | zero => simp [vsota_prvih]
+  | succ k ih =>
+    simp [vsota_prvih]
+    rw [Nat.mul_add]
+    rw [ih]
+    sorry
 
 theorem cisto_pravi_gauss : (n : Nat) → vsota_prvih n = (n * (n + 1)) / 2 := by
   sorry
