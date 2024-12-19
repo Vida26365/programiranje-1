@@ -23,7 +23,13 @@ theorem gauss : (n : Nat) → 2 * vsota_prvih n = n * (n + 1) := by
     simp [vsota_prvih]
     rw [Nat.mul_add]
     rw [ih]
-    sorry
+    calc 2 * (k + 1) + k * (k + 1) =
+      (2 + k) * (k + 1) := by simp [Nat.add_mul]
+    _ =  (2 + k) * (k + 1) := by simp
+    _ =  (k + 1) * (2 + k) := by simp [Nat.mul_comm]
+    _ =  (k + 1) * (k + 2) := by simp [Nat.add_comm]
+    _ =  (k + 1) * ( k + 1 + 1) := by simp
+
 
 theorem cisto_pravi_gauss : (n : Nat) → vsota_prvih n = (n * (n + 1)) / 2 := by
   sorry
