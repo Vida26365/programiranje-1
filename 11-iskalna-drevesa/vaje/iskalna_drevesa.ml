@@ -6,6 +6,9 @@
  poddrevesi. Na tej točki ne predpostavljamo ničesar drugega o obliki dreves.
 [*-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=*)
 
+type 'a drevo  =  
+     | Prazno
+     | Sestavljeno of 'a * ('a drevo)* ('a drevo)
 
 (*----------------------------------------------------------------------------*]
  Definirajmo si testni primer za preizkušanje funkcij v nadaljevanju. Testni
@@ -18,6 +21,9 @@
       0   6   11
 [*----------------------------------------------------------------------------*)
 
+let leaf a = Sestavljeno (a, Prazno, Prazno)
+
+let testni_primer = Sestavljeno (5, Sestavljeno (2, leaf 0, Prazno), Sestavljeno (7, leaf 6, leaf 11))
 
 (*----------------------------------------------------------------------------*]
  Funkcija [mirror] vrne prezrcaljeno drevo. Na primeru [test_tree] torej vrne
@@ -33,6 +39,10 @@
  Node (Empty, 2, Node (Empty, 0, Empty)))
 [*----------------------------------------------------------------------------*)
 
+let rec mirror = 
+     function
+     | Prazno -> Prazno
+     | Sestavljeno (a, l, r) -> Sestavljeno (a, mirror l, mirror r)
 
 (*----------------------------------------------------------------------------*]
  Funkcija [height] vrne višino oz. globino drevesa, funkcija [size] pa število
@@ -43,7 +53,15 @@
  # size test_tree;;
  - : int = 6
 [*----------------------------------------------------------------------------*)
+let rec height = 
+     function
+     | Prazno -> 0
+     | Sestavljeno (a, l, r) -> 1 + max (height l) (height r)
 
+let rec size = 
+     function
+     | Prazno -> 0
+     | Sestavljeno (a, l,r) -> 1 + size l + size r
 
 (*----------------------------------------------------------------------------*]
  Funkcija [map_tree f tree] preslika drevo v novo drevo, ki vsebuje podatke
@@ -54,6 +72,10 @@
  Node (Node (Node (Empty, false, Empty), false, Empty), true,
  Node (Node (Empty, true, Empty), true, Node (Empty, true, Empty)))
 [*----------------------------------------------------------------------------*)
+let rec map_tree f = 
+     function
+     | Prazno -> Prazno
+     | Sestavljeno (a, l, r) -> Sestavljeno (f a, map_tree f l, map_tree f r)
 
 
 (*----------------------------------------------------------------------------*]
@@ -63,6 +85,10 @@
  # list_of_tree test_tree;;
  - : int list = [0; 2; 5; 6; 7; 11]
 [*----------------------------------------------------------------------------*)
+let rec list_of_tree =
+     function
+     | Prazno -> []
+     | Sestavljeno (a, l, r) -> (list_of_tree l) @ [a] @ (list_of_tree r)
 
 
 (*----------------------------------------------------------------------------*]
@@ -70,11 +96,36 @@
  Tree, na kratko BST). Predpostavite, da v drevesu ni ponovitev elementov, 
  torej drevo npr. ni oblike Node( leaf 1, 1, leaf 2)). Prazno drevo je BST.
  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
- # is_bst test_tree;;
+ # is_bst testni_primer;;
  - : bool = true
- # test_tree |> mirror |> is_bst;;
+ # testni_primer |> mirror |> is_bst;;
  - : bool = false
 [*----------------------------------------------------------------------------*)
+
+let rec maxt =
+     function
+     | Prazno -> failwith ""
+     | Sestavljeno (a, l, r) -> 
+          match r with
+          | Prazno -> a
+          | x -> maxt x
+
+let rec mint =
+     function
+     | Prazno -> failwith ""
+     | Sestavljeno (a, l, r) -> 
+          match l with
+          | Prazno -> a
+          | x -> mint x
+
+let rec is_bst = 
+     function
+     | Prazno -> true
+     (* | leaf -> true *)
+     | Sestavljeno (a, l, r) -> 
+          is_bst l && is_bst r && 
+     
+          (l = Prazno || a > (maxt l)) && (r = Prazno || a < (mint r))
 
 
 (*-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=*]
