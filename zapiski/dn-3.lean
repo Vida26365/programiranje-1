@@ -128,7 +128,6 @@ theorem paradoks_pivca :
     exact nPp Pp
 
 
-
 /------------------------------------------------------------------------------
  ## Dvojiška drevesa
 
@@ -217,3 +216,27 @@ theorem elementi_elementi' :
     rw [elementi'.aux]
     rw [<-ihr]
     simp [lema]
+
+
+theorem lema2 : {A : Type} → (t : Drevo A) → (xs : List A) → elementi'.aux t xs = elementi' t ++ xs := by
+  intro A t
+  induction t with
+  | prazno =>
+    simp [elementi']
+    simp [elementi'.aux]
+  | sestavljeno l x r ihl ihr =>
+    simp [elementi']
+    simp [elementi'.aux]
+    simp [ihl]
+    simp [ihr]
+
+
+theorem elementi_elementi'2 : {A : Type} → (t : Drevo A) → elementi t = elementi' t := by
+  intro A t
+  induction t with
+  | prazno => simp [elementi, elementi', elementi'.aux]
+  | sestavljeno l x d ihl ihd =>
+    simp [elementi, elementi', elementi'.aux]
+    rw [← elementi', ← ihd]
+    simp [lema2]
+    rw [ihl]
