@@ -45,43 +45,24 @@ module type TAPE = sig
 end
 
 module Tape : TAPE = struct
-  (* type t = char list * char * char list *)
   type t = { p : char list; g : char; z : char list }
 
   let make str = 
     match (String.to_seq str |> List.of_seq) with
     | [] -> { p = []; g = ' '; z = [] }
-      (* ([], ' ', []) *)
     | glava::tail -> { p = []; g = glava; z = tail }
-      (* ([] , glava, tail) *)
   let move (s : direction) (t : t) = 
     match s with
     | Left -> 
       (match t.p with
       | [] -> { p = []; g = ' '; z = t.g::t.z }
-        (* ([], ' ', g::z) *)
       | x::xs -> if t.g = ' ' && t.z = [] then {p = xs; g = x; z = []} else {p = xs; g = x; z = t.g::t.z})
-        (* (xs, x, g::z)) *)
     | Right -> 
       match t.z with
       | [] -> {p = t.g::t.p; g = ' '; z = []}
       | x::xs -> if t.g = ' ' && t.p = [] then {p = []; g = x; z = xs} else {p = t.g::t.p; g = x; z = xs}
-        (* (g::p, x, xs) *)
-      (* (match z with
-      | [] -> ' '::p, [' ']
-      | ' '::xs -> (
-        match p with
-        | [] -> ([], xs)
-        | _ -> (' '::p, xs))
-      | x::xs -> (x::p, xs)) *)
   let read t = t.g
-    (* match z with
-    | [] -> failwith "to se ne bi smel zgodit 2"
-    | x::xs -> x *)
   let write c t = { t with g = c }
-    (* match z with
-    | [] -> (p, [c])
-    | x::xs -> (p, c::xs) *)
   let print t = 
     print_string (List.to_seq (List.rev t.p) |> String.of_seq);
     print_char t.g;
@@ -148,7 +129,6 @@ module Machine : MACHINE = struct
     initial : state;
     states : state list;
     transitions : ((state * char) * (state * char * direction)) list
-    (* transitions : state -> char -> (state * char * direction) *)
   }
   let make st stlst = {
     initial = st;
@@ -161,11 +141,11 @@ module Machine : MACHINE = struct
     let rec po_funkcijah = 
       function
       | [] -> None
-      | ((stt, ch), (s, c, d))::xs when stt = st && ch = tp.g -> Some (s, Tape.move d (Tape.write c tp))
+      | ((stt, ch), (s, c, d))::xs when stt = st && ch = Tape.read tp -> 
+        Some (s, Tape.move d (Tape.write c tp))
       | _::xs -> po_funkcijah xs
     in
     po_funkcijah rc.transitions
-    (* failwith "TODO" *)
 end
 
 (*----------------------------------------------------------------------------*
@@ -194,7 +174,21 @@ let binary_increment =
  izvajanja.
 [*----------------------------------------------------------------------------*)
 
-let slow_run _ _ = ()
+let slow_run m niz =
+  let tp = Tape.make niz in
+  let st = Machine.initial m in
+  let rec pom stt tp =
+    match Machine.step m stt tp with
+    | None -> Tape.print tp
+    | Some (st, tap) -> 
+      Tape.print tap;
+      print_endline st;
+      pom st tap
+    in
+  pom st tp
+    
+    (* let stt, tap = Machine.step m (Machine.initial m) tp |> Option.get in *)
+  
 
 let primer_slow_run =
   slow_run binary_increment "1011"
@@ -229,7 +223,15 @@ done
 *)
 (* val primer_slow_run : unit = () *)
 
-let speed_run _ _ = ()
+let speed_run m niz = 
+  let tp = Tape.make niz in
+  let st = Machine.initial m in
+  let rec pom stt tp =
+    match Machine.step m stt tp with
+    | None -> Tape.print tp
+    | Some (st, tap) -> pom st tap
+    in
+  pom st tp
 
 let primer_speed_run =
   speed_run binary_increment "1011"
