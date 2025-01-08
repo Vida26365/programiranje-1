@@ -59,46 +59,36 @@ let insert_sort sez =
  dodati na konec urejenega podseznama.
  (Hitreje je obrniti vrstni red seznama kot na vsakem koraku uporabiti [@].)
 [*-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=*)
- 
-let zizbiranjem sez = 
-  let mi sez = 
-    match sez with
-    | [] -> []
+
+let zizbiranjem (sez: int list)  : (int list)=
+  let mi : (int list -> int) = 
+    function
+    | [] -> failwith "ksckqlh"
     | x::xs -> List.fold_left min x xs
   in
-  let rec nneur neur acc =
-    let m = mi neur in
+  let rec poneuraddnur m nur neur=
     match neur with
-    | [] -> acc
-    | x::xs when x = m -> List.rev acc @ xs
-    | x::xs -> nneur xs (x::acc)
+    | [] -> nur
+    | x::xs when x = m -> x::nur
+    | x::xs -> poneuraddnur m nur xs
   in
-  let rec pom ur neur =
+  let rec removeneur m acc =
+    function
+    | [] -> List.rev acc
+    | x::xs when x = m -> (List.rev acc) @ xs
+    | x::xs -> removeneur m (x::acc) xs
+  in
+    
+  let rec pom nur neur= 
     match neur with
-    | [] -> ur
-    | x::xs -> pom (x::ur) (nneur neur [])
+    | [] -> List.rev nur
+    | _ ->
+      let m = mi neur in
+      let nur2 = poneuraddnur m nur neur in
+      let neur2 = removeneur m [] neur in
+      pom nur2 neur2
   in
-  List.rev (pom sez [])
-
-
-
-
-(* let izbiranjem sez =
-  let acc = 
-    match sez with
-    | [] -> 0
-    | x::_ -> x
-  in
-  let rec najmanjsi sez acc =
-    match sez with
-    | [] -> acc
-    | x::xs when x < acc -> najmanjsi xs x
-    | _::xs -> najmanjsi xs acc
-  in
-  let pom ur neur = 
-    match neur with
-    | [] -> ur
-    | _ -> pom  najmanjsi::ur  *)
+  pom [] sez
 
 
 (*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*]
@@ -127,7 +117,19 @@ let zizbiranjem sez =
  # test;;
  - : int array = [|0; 4; 2; 3; 1|]
 [*----------------------------------------------------------------------------*)
+let swap arr i j = 
+  let a = arr.(i) in
+  arr.(i) <- arr.(j);
+  arr.(j) <- a
 
+let najmanjsi_indeks arr d g =
+  let rec poindeksih m j i = 
+    match i with
+    | _ when  i > g -> j
+    | _ when arr.(i) < m -> poindeksih (arr.(i)) i (i+1)
+    | _ -> poindeksih m j (i + 1)
+  in
+  poindeksih arr.(d) d (d+1)
 
 (*----------------------------------------------------------------------------*]
  Funkcija [index_min a lower upper] poišče indeks najmanjšega elementa tabele
@@ -135,6 +137,18 @@ let zizbiranjem sez =
  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
  index_min [|0; 2; 9; 3; 6|] 2 4 = 4
 [*----------------------------------------------------------------------------*)
+let zizbiranjemarray arr =
+  let rec pom i =
+    match i with
+    | _ when Array.length arr = i + 1 -> arr
+    | _ -> 
+      let m = najmanjsi_indeks arr (i) (Array.length arr - 1) in
+      swap arr m i;
+      pom (i + 1) 
+  in
+  pom 0
+
+
 
 
 (*----------------------------------------------------------------------------*]

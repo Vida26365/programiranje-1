@@ -45,19 +45,60 @@ module type TAPE = sig
 end
 
 module Tape : TAPE = struct
-  type t = unit
+  (* type t = char list * char * char list *)
+  type t = { p : char list; g : char; z : char list }
 
-  let make _ = ()
-  let move _ _ = ()
-  let read _ = ' '
-  let write _ _ = ()
-  let print _ = ()
+  let make str = 
+    match (String.to_seq str |> List.of_seq) with
+    | [] -> { p = []; g = ' '; z = [] }
+      (* ([], ' ', []) *)
+    | glava::tail -> { p = []; g = glava; z = tail }
+      (* ([] , glava, tail) *)
+  let move (s : direction) (t : t) = 
+    match s with
+    | Left -> 
+      (match t.p with
+      | [] -> { p = []; g = ' '; z = t.g::t.z }
+        (* ([], ' ', g::z) *)
+      | x::xs -> if t.g = ' ' && t.z = [] then {p = xs; g = x; z = []} else {p = xs; g = x; z = t.g::t.z})
+        (* (xs, x, g::z)) *)
+    | Right -> 
+      match t.z with
+      | [] -> {p = t.g::t.p; g = ' '; z = []}
+      | x::xs -> if t.g = ' ' && t.p = [] then {p = []; g = x; z = xs} else {p = t.g::t.p; g = x; z = xs}
+        (* (g::p, x, xs) *)
+      (* (match z with
+      | [] -> ' '::p, [' ']
+      | ' '::xs -> (
+        match p with
+        | [] -> ([], xs)
+        | _ -> (' '::p, xs))
+      | x::xs -> (x::p, xs)) *)
+  let read t = t.g
+    (* match z with
+    | [] -> failwith "to se ne bi smel zgodit 2"
+    | x::xs -> x *)
+  let write c t = { t with g = c }
+    (* match z with
+    | [] -> (p, [c])
+    | x::xs -> (p, c::xs) *)
+  let print t = 
+    print_string (List.to_seq (List.rev t.p) |> String.of_seq);
+    print_char t.g;
+    print_string (List.to_seq t.z |> String.of_seq);
+    print_newline ();
+    print_string (String.make (List.length t.p) ' ');
+    print_char '^';
+    print_newline ()
 end
 
 let primer_trak = Tape.(
-  make "ABCDE"
+  make "A    B  CDE"
   |> move Left
   |> move Left
+  |> move Right
+  |> move Right
+  |> move Right
   |> move Right
   |> move Right
   |> move Right
@@ -103,11 +144,28 @@ module type MACHINE = sig
 end
 
 module Machine : MACHINE = struct
-  type t = unit
-  let make _ _ = ()
-  let initial _ = ""
-  let add_transition _ _ _ _ _ _ = ()
-  let step _ _ _ = None
+  type t = {
+    initial : state;
+    states : state list;
+    transitions : ((state * char) * (state * char * direction)) list
+    (* transitions : state -> char -> (state * char * direction) *)
+  }
+  let make st stlst = {
+    initial = st;
+    states = stlst;
+    transitions = []
+  }
+  let initial rc = rc.initial
+  let add_transition st ch s c d rc = { rc with transitions = ((st, ch), (s, c, d))::rc.transitions }
+  let step rc st tp =
+    let rec po_funkcijah = 
+      function
+      | [] -> None
+      | ((stt, ch), (s, c, d))::xs when stt = st && ch = tp.g -> Some (s, Tape.move d (Tape.write c tp))
+      | _::xs -> po_funkcijah xs
+    in
+    po_funkcijah rc.transitions
+    (* failwith "TODO" *)
 end
 
 (*----------------------------------------------------------------------------*
