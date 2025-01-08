@@ -261,7 +261,13 @@ let primer_speed_run =
  s katerimi bi lahko zgornji primer na krajše zapisali kot spodaj.
  Implementacijo in tipe ugotovite sami.
 [*----------------------------------------------------------------------------*)
-
+let for_state (stt : state) (sez : 'a list) (m: Machine.t) : Machine.t = failwith "TODO"
+let for_character (ch : char) _ = failwith "TODO"
+let for_characters (str : string) _ = failwith "TODO"
+let move (d : direction) = failwith "TODO"
+let switch_and_move (stt : state) (d : direction) = failwith "TODO"
+let write_and_move = failwith "TODO WHAT"
+let write_switch_and_move (ch : char) (stt : state) (d : direction) = failwith "TODO"
 (* let binary_increment' =
   Machine.make "right" ["carry"; "done"]
   |> for_state "right" [
@@ -295,7 +301,7 @@ let primer_speed_run =
  Sestavite Turingov stroj, ki začetni niz obrne na glavo.
 [*----------------------------------------------------------------------------*)
 
-let reverse = ()
+let reverse = failwith "TODO"
 
 let primer_reverse = speed_run reverse "0000111001"
 (* 
