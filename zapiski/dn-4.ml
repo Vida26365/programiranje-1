@@ -181,8 +181,8 @@ let slow_run m niz =
     match Machine.step m stt tp with
     | None -> Tape.print tp
     | Some (st, tap) -> 
-      Tape.print tap;
-      print_endline st;
+      Tape.print tp;
+      print_endline stt;
       pom st tap
     in
   pom st tp
@@ -190,8 +190,8 @@ let slow_run m niz =
     (* let stt, tap = Machine.step m (Machine.initial m) tp |> Option.get in *)
   
 
-let primer_slow_run =
-  slow_run binary_increment "1011"
+(* let primer_slow_run =
+  slow_run binary_increment "1011" *)
 (*
 1011
 ^
@@ -233,8 +233,8 @@ let speed_run m niz =
     in
   pom st tp
 
-let primer_speed_run =
-  speed_run binary_increment "1011"
+(* let primer_speed_run =
+  speed_run binary_increment "1011" *)
 (*
 1100
 ^
@@ -261,14 +261,29 @@ let primer_speed_run =
  s katerimi bi lahko zgornji primer na krajše zapisali kot spodaj.
  Implementacijo in tipe ugotovite sami.
 [*----------------------------------------------------------------------------*)
-let for_state (stt : state) (sez : 'a list) (m: Machine.t) : Machine.t = failwith "TODO"
-let for_character (ch : char) _ = failwith "TODO"
-let for_characters (str : string) _ = failwith "TODO"
-let move (d : direction) = failwith "TODO"
-let switch_and_move (stt : state) (d : direction) = failwith "TODO"
-let write_and_move = failwith "TODO WHAT"
-let write_switch_and_move (ch : char) (stt : state) (d : direction) = failwith "TODO"
-(* let binary_increment' =
+let for_state (stt : state) (sez : (state -> Machine.t -> Machine.t) list list) (m: Machine.t) : Machine.t = 
+  let funkcije = List.flatten sez in
+  let rec po_funkcijah m = 
+    function
+    | [] -> m
+    | f::fuss -> po_funkcijah (f stt m) fuss
+  in
+  po_funkcijah m funkcije
+
+let for_character (ch : char) (f : char -> state -> Machine.t -> Machine.t) : (state -> Machine.t -> Machine.t) list= [f ch]
+let for_characters (str : string) (f : char -> state -> Machine.t -> Machine.t) (* gor se kliče še state -> char -> machine *) = (*TODO*)
+  String.to_seq str
+  |> List.of_seq
+  |> List.map f
+  
+
+let move (d : direction)(ch : char) (stt: state) : (Machine.t -> Machine.t)  = Machine.add_transition stt ch stt ch d (*še machine.t*)
+let switch_and_move (stt : state) (d : direction)(ch : char) (st : state) : (Machine.t -> Machine.t) = Machine.add_transition st ch stt ch d
+let write_and_move (ch : char) (d : direction) (chr : char) (stt: state) : (Machine.t -> Machine.t) = Machine.add_transition stt chr stt ch d
+let write_switch_and_move (ch : char) (stt : state) (d : direction) (chr : char) (st: state) : (Machine.t -> Machine.t) = Machine.add_transition st chr stt ch d
+
+
+let binary_increment' =
   Machine.make "right" ["carry"; "done"]
   |> for_state "right" [
     for_characters "01" @@ move Right;
@@ -277,7 +292,7 @@ let write_switch_and_move (ch : char) (stt : state) (d : direction) = failwith "
   |> for_state "carry" [
     for_character '1' @@ switch_and_move "carry" Left;
     for_characters "0 " @@ write_switch_and_move '1' "done" Left
-  ]   *)
+  ]  
 (* val binary_increment' : Machine.t = <abstr> *)
 
 (*----------------------------------------------------------------------------*
@@ -301,7 +316,65 @@ let write_switch_and_move (ch : char) (stt : state) (d : direction) = failwith "
  Sestavite Turingov stroj, ki začetni niz obrne na glavo.
 [*----------------------------------------------------------------------------*)
 
-let reverse = failwith "TODO"
+let reverse = 
+  Machine.make "zacetek" ["most"; "mist"; "raziskovalec"; "nabiralec"; "unicevalko"; "unicevalki"; "brodnok"; "bridnik"; "glasnok"; "glasnik"; "postar"; "done"; "Thanatos"; "zadnja_ladja"; "zadnja_kocija"; "woops_mal_prevec"]
+  |> for_state "zacetek" [
+    for_character '0' @@ switch_and_move "most" Left;
+    for_character '1' @@ switch_and_move "mist" Left;
+    for_character ' ' @@ switch_and_move "done" Left
+  ]
+  |> for_state "most" [
+    for_characters " 01" @@ switch_and_move "glasnok" Left
+  ]
+  |> for_state "mist" [
+    for_characters " 01" @@ switch_and_move "glasnik" Left
+  ]
+  |>for_state "raziskovalec" [
+    for_characters "01" @@ switch_and_move "nabiralec" Right;
+    for_character ' ' @@ move Right
+  ]
+  |> for_state "nabiralec" [
+    for_character '0' @@ switch_and_move "unicevalko" Left;
+    for_character '1' @@ switch_and_move "unicevalki" Left;
+    for_character ' ' @@ switch_and_move "Thanatos" Left
+  ]
+  |> for_state "unicevalko" [
+    for_characters "01 " @@ write_switch_and_move ' ' "brodnok" Left
+  ]
+  |> for_state "unicevalki" [
+    for_characters "01 " @@ write_switch_and_move ' ' "bridnik" Left
+  ]
+  |> for_state "brodnok" [
+    for_character ' ' @@ move Left;
+    for_characters "01" @@ switch_and_move "glasnok" Left
+  ]
+  |> for_state "bridnik" [
+    for_character ' ' @@ move Left;
+    for_characters "01" @@ switch_and_move "glasnik" Left
+  ]
+  |> for_state "glasnok" [
+    for_character ' ' @@ write_switch_and_move '0' "postar" Right;
+    for_characters "01" @@ move Left
+  ]
+  |> for_state "glasnik" [
+    for_character ' ' @@ write_switch_and_move '1' "postar" Right;
+    for_characters "01" @@ move Left
+  ]
+  |> for_state "postar" [
+    for_characters "01" @@ move Right;
+    for_character ' ' @@ switch_and_move "raziskovalec" Right
+  ]
+  |> for_state "Thanatos" [
+    for_characters " 01" @@ write_switch_and_move ' ' "zadnja_ladja" Left
+  ]
+  |> for_state "zadnja_ladja" [
+    for_character ' ' @@ move Left;
+    for_characters "01" @@ switch_and_move "zadnja_kocija" Left
+  ]
+  |> for_state "zadnja_kocija" [
+    for_characters "01" @@ move Left;
+    for_character ' ' @@ switch_and_move "woops_mal_prevec" Right
+  ]
 
 let primer_reverse = speed_run reverse "0000111001"
 (* 
@@ -318,7 +391,14 @@ let primer_reverse = speed_run reverse "0000111001"
  Sestavite Turingov stroj, ki podvoji začetni niz.
 [*----------------------------------------------------------------------------*)
 
-let duplicate = ()
+let duplicate = failwith "DUPLICATE"
+  (*let rec pirnt_dubble str =
+    function
+    | [] -> str
+    | x::xs -> x ^ x ^ str
+    
+  String.to_seq
+  | List.from_seq*)
 
 let primer_duplicate = speed_run duplicate "010011"
 (* 
