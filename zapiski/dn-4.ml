@@ -281,7 +281,12 @@ let move (d : direction)(ch : char) (stt: state) : (Machine.t -> Machine.t)  = M
 let switch_and_move (stt : state) (d : direction)(ch : char) (st : state) : (Machine.t -> Machine.t) = Machine.add_transition st ch stt ch d
 let write_and_move (ch : char) (d : direction) (chr : char) (stt: state) : (Machine.t -> Machine.t) = Machine.add_transition stt chr stt ch d
 let write_switch_and_move (ch : char) (stt : state) (d : direction) (chr : char) (st: state) : (Machine.t -> Machine.t) = Machine.add_transition st chr stt ch d
-
+(* let woops (c : char) (st : state) (m : Machine.t) = 
+  print_string "char: ";
+  print_char c;
+  print_newline ();
+  print_string "state";
+  print_string st; *)
 
 let binary_increment' =
   Machine.make "right" ["carry"; "done"]
@@ -391,14 +396,43 @@ let primer_reverse = speed_run reverse "0000111001"
  Sestavite Turingov stroj, ki podvoji začetni niz.
 [*----------------------------------------------------------------------------*)
 
-let duplicate = failwith "DUPLICATE"
-  (*let rec pirnt_dubble str =
-    function
-    | [] -> str
-    | x::xs -> x ^ x ^ str
-    
-  String.to_seq
-  | List.from_seq*)
+let duplicate = 
+  Machine.make "ukbvs" []
+  |> for_state "ukbvs" [
+    for_character '0' @@ write_switch_and_move ' ' "omzu" Right;
+    for_character '1' @@ write_switch_and_move ' ' "imzu" Right
+  ]
+  |> for_state "omzu" [
+    for_characters "01" @@ move Right;
+    for_character ' ' @@ write_switch_and_move '!' "vrtio" Right
+  ]
+  |> for_state "imzu" [
+    for_characters "01" @@ move Right;
+    for_character ' ' @@ write_switch_and_move '!' "vrtii" Right
+  ]
+  |> for_state "vrtio" [
+    for_characters "01!" @@ move Right;
+    for_character ' ' @@ write_switch_and_move '0' "vrtso" Right
+  ]
+  |> for_state "vrtii" [
+    for_characters "01!" @@ move Right;
+    for_character ' ' @@ write_switch_and_move '1' "vrtsi" Right
+  ]
+  |> for_state "vrtso" [
+    for_character ' ' @@ write_switch_and_move '0' "sodsbundm" Left
+  ]
+  |> for_state "vrtsi" [
+    for_character ' ' @@ write_switch_and_move '1' "sodsbundm" Left
+  ]
+  |> for_state "sodsbundm" [
+    for_characters "01!" @@ move Left;
+    for_character ' ' @@ switch_and_move "vsit" Right
+  ]
+  |> for_state "vsit" [
+    for_character '0' @@ write_switch_and_move ' ' "vrtio" Right;
+    for_character '1' @@ write_switch_and_move ' ' "vrtii" Right;
+    for_character '!' @@ write_switch_and_move ' ' "tanatos" Right
+  ]
 
 let primer_duplicate = speed_run duplicate "010011"
 (* 
@@ -416,7 +450,7 @@ let primer_duplicate = speed_run duplicate "010011"
  v dvojiškem zapisu, na koncu pa naj bo na traku zapisanih natanko $n$ enic.
 [*----------------------------------------------------------------------------*)
 
-let to_unary = ()
+let to_unary = failwith "TO UNARY"
 
 let primer_to_unary = speed_run to_unary "1010"
 (* 
@@ -435,7 +469,7 @@ let primer_to_unary = speed_run to_unary "1010"
  dvojiškem zapisu.
 [*----------------------------------------------------------------------------*)
 
-let to_binary = ()
+let to_binary = failwith "TO BINARY"
 
 let primer_to_binary = speed_run to_binary (String.make 42 '1')
 (* 
