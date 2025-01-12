@@ -465,9 +465,10 @@ let primer_duplicate = speed_run duplicate "010011"
 [*----------------------------------------------------------------------------*)
 
 let to_unary = 
-  Machine.make "zacetek" []
+  Machine.make "zacetek" ["postavi!"; "postavi"; "nazaj"; "beri"; "podvoji"; "oznaci"; "zapisi"; "izbrisi?"; "podvoji_postavi"; "oznaci_postavi"; "zapisi_postavi"; "izbrisi?_postavi"]
   |> for_state "zacetek" [
-    for_character '1' @@ write_switch_and_move ' ' "postavi!" Right
+    for_character '1' @@ write_switch_and_move ' ' "postavi!" Right;
+    for_character '0' @@ write_switch_and_move ' ' "done" Right
   ]
   |> for_state "postavi!" [
     for_characters "01!" @@ move Right;
@@ -536,7 +537,35 @@ let primer_to_unary = slow_run to_unary "1010"
  dvojiškem zapisu.
 [*----------------------------------------------------------------------------*)
 
-let to_binary = failwith "TO BINARY"
+let to_binary = 
+  Machine.make "klicajaj" []
+  |> for_state "klicajaj" [
+    for_characters "1" @@ write_switch_and_move '!' "desnanje" Right
+  ]
+  |> for_state "desnanje" [
+    for_characters "01!" @@ move Right;
+    for_character ' ' @@ switch_and_move "zbrisi_enko" Left
+  ]
+  |> for_state "zbrisi_enko" [
+    for_character '1' @@ write_switch_and_move ' ' "goinc" Left;
+    for_character '!' @@ write_switch_and_move ' ' "zadnji_inc" Left
+  ]
+  |> for_state "goinc" [
+    for_character '1' @@ move Left;
+    for_character '!' @@ switch_and_move "inc" Left
+  ]
+  |> for_state "inc" [
+    for_characters " 0" @@ write_switch_and_move '1' "desnanje" Right;
+    for_character '1' @@ write_and_move '0' Left
+  ]
+  |> for_state "zadnji_inc" [
+    for_characters " 0" @@ write_switch_and_move '1' "na_zacetek" Left;
+    for_character '1' @@ write_and_move '0' Left
+  ]
+  |> for_state "na_zacetek" [
+    for_characters "10" @@ move Left;
+    for_character ' ' @@ switch_and_move "done" Right
+  ]
 
 let primer_to_binary = speed_run to_binary (String.make 42 '1')
 (* 
