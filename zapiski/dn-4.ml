@@ -128,24 +128,38 @@ module Machine : MACHINE = struct
   type t = {
     initial : state;
     states : state list;
-    transitions : ((state * char) * (state * char * direction)) list
+    transitions : (state * (char * (state * char * direction)) list) list
   }
   let make st stlst = {
     initial = st;
     states = stlst;
-    transitions = []
+    transitions = st::stlst |> List.map (fun x -> (x, []))
   }
   let initial rc = rc.initial
-  let add_transition st ch s c d rc = { rc with transitions = ((st, ch), (s, c, d))::rc.transitions }
+  let add_transition st ch s c d rc = 
+    let rec po_transitions =
+      function
+      | [] -> { rc with transitions = (st, [(ch, (s, c, d))])::rc.transitions}
+      | (stt, lst)::xs when stt = st -> { rc with transitions = (stt, (ch, (s, c, d))::lst)::xs }
+      | _::xs -> po_transitions xs
+    in
+    po_transitions rc.transitions
+
   let step rc st tp =
-    let rec po_funkcijah = 
+    let rec po_transitions = 
       function
       | [] -> None
-      | ((stt, ch), (s, c, d))::xs when stt = st && ch = Tape.read tp -> 
-        Some (s, Tape.move d (Tape.write c tp))
-      | _::xs -> po_funkcijah xs
+      | (stt, lst)::xs when stt = st -> 
+        (let rec po_znakih = 
+          function
+          | [] -> None
+          | (ch, (s, c, d))::xs when ch = Tape.read tp -> Some (s, Tape.move d (Tape.write c tp))
+          | _::xs -> po_znakih xs
+        in
+        po_znakih lst)
+      | _::xs -> po_transitions xs
     in
-    po_funkcijah rc.transitions
+    po_transitions rc.transitions
 end
 
 (*----------------------------------------------------------------------------*
@@ -450,9 +464,62 @@ let primer_duplicate = speed_run duplicate "010011"
  v dvojiškem zapisu, na koncu pa naj bo na traku zapisanih natanko $n$ enic.
 [*----------------------------------------------------------------------------*)
 
-let to_unary = failwith "TO UNARY"
+let to_unary = 
+  Machine.make "zacetek" []
+  |> for_state "zacetek" [
+    for_character '1' @@ write_switch_and_move ' ' "postavi!" Right
+  ]
+  |> for_state "postavi!" [
+    for_characters "01!" @@ move Right;
+    for_character ' ' @@ write_switch_and_move '!' "postavi" Right
+  ]
+  |> for_state "postavi" [
+    for_characters "01!" @@ move Right;
+    for_character ' ' @@ write_switch_and_move '1' "nazaj" Left
+  ]
+  |> for_state "nazaj" [
+    for_characters "01!" @@ move Left;
+    for_character ' ' @@ switch_and_move "beri" Right
+  ]
+  |> for_state "beri" [
+    for_character '1' @@ write_switch_and_move ' ' "podvoji_postavi" Right;
+    for_character '0' @@ write_switch_and_move ' ' "podvoji" Right;
+    for_character '!' @@ write_switch_and_move ' ' "done" Right
+  ]
+  |> for_state "podvoji" [
+    for_characters "01!" @@ move Right;
+    for_character ' ' @@ switch_and_move "oznaci" Left
+  ]
+  |> for_state "oznaci" [
+    for_character '1' @@ write_switch_and_move '?' "zapisi" Right;
+    for_character '!' @@ switch_and_move "nazaj" Left
+  ]
+  |> for_state "zapisi" [
+    for_character '1' @@ move Right;
+    for_character ' ' @@ write_switch_and_move '1' "izbrisi?" Left
+  ]
+  |> for_state "izbrisi?" [
+    for_character '1' @@ move Left;
+    for_character '?' @@ write_switch_and_move '1' "oznaci" Left
+  ]
+  |> for_state "podvoji_postavi" [
+    for_characters "01!" @@ move Right;
+    for_character ' ' @@ switch_and_move "oznaci_postavi" Left
+  ]
+  |> for_state "oznaci_postavi" [
+    for_character '1' @@ write_switch_and_move '?' "zapisi_postavi" Right;
+    for_character '!' @@ switch_and_move "postavi" Left
+  ]
+  |> for_state "zapisi_postavi" [
+    for_character '1' @@ move Right;
+    for_character ' ' @@ write_switch_and_move '1' "izbrisi?_postavi" Left
+  ]
+  |> for_state "izbrisi?_postavi" [
+    for_character '1' @@ move Left;
+    for_character '?' @@ write_switch_and_move '1' "oznaci_postavi" Left
+  ]
 
-let primer_to_unary = speed_run to_unary "1010"
+let primer_to_unary = slow_run to_unary "1010"
 (* 
 1111111111
 ^
