@@ -355,8 +355,54 @@ let binary_increment' =
 (*----------------------------------------------------------------------------*
  Sestavite Turingov stroj, ki začetni niz obrne na glavo.
 [*----------------------------------------------------------------------------*)
-
 let reverse = 
+  Machine.make "prva_izvidnica" []
+  |> for_state "prva_izvidnica" [
+    for_character '!' @@ move Right;
+    for_characters "01" @@ switch_and_move "izvidnica" Right;
+  ]
+  |> for_state "izvidnica" [
+    for_characters "01" @@ switch_and_move "postavljanje_tracnic" Left;
+    for_character '!' @@ move Right;
+    for_character ' ' @@ switch_and_move "aaaa_indijanci,_pospravi_stvari_in_tracnice!" Left
+  ]
+  |> for_state "postavljanje_tracnic" [
+    for_character '1' @@ write_switch_and_move '!' "odlaganje_vrednih_kamnin" Left;    
+    for_character '0' @@ write_switch_and_move '!' "odlaganje_nicvrednih_kamnin" Left
+  ]
+  |> for_state "odlaganje_vrednih_kamnin" [
+    for_characters "01!" @@ move Left;
+    for_character ' ' @@ write_switch_and_move '1' "nazaj_do_tracnic" Right
+  ]
+  |> for_state "odlaganje_nicvrednih_kamnin" [
+    for_characters "01!" @@ move Left;
+    for_character ' ' @@ write_switch_and_move '0' "nazaj_do_tracnic" Right
+  ]
+  |> for_state "nazaj_do_tracnic" [
+    for_characters "01" @@ move Right;
+    for_character '!' @@ switch_and_move "prva_izvidnica" Right
+  ]
+  |> for_state "aaaa_indijanci,_pospravi_stvari_in_tracnice!" [
+    for_character '1' @@ write_switch_and_move ' ' "pospravi_tracnice_in_odnesi_vredne_kamnine" Left;
+    for_character '0' @@ write_switch_and_move ' ' "pospravi_tracnice_in_odnesi_nicvredne_kamnine" Left;
+  ]
+  |> for_state "pospravi_tracnice_in_odnesi_vredne_kamnine" [
+    for_characters "01" @@ move Left;
+    for_character '!' @@ write_and_move ' ' Left;
+    for_character ' ' @@ write_switch_and_move '1' "fjuhhh,_ubezali_smo_jim" Right;
+  ]
+  |> for_state "pospravi_tracnice_in_odnesi_nicvredne_kamnine" [
+    for_characters "01" @@ move Left;
+    for_character '!' @@ write_and_move ' ' Left;
+    for_character ' ' @@ write_switch_and_move '0' "fjuhhh,_ubezali_smo_jim" Right;
+  ]
+  |> for_state "fjuhhh,_ubezali_smo_jim" [
+    for_characters "01 " @@ switch_and_move "mirno smo na zacetku" Left
+    (* for_character ' ' @@ switch_and_move "k" Right *)
+  ]
+  
+
+(* let reverse = 
   Machine.make "zacetek" ["most"; "mist"; "raziskovalec"; "nabiralec"; "unicevalko"; "unicevalki"; "brodnok"; "bridnik"; "glasnok"; "glasnik"; "postar"; "done"; "Thanatos"; "zadnja_ladja"; "zadnja_kocija"; "woops_mal_prevec"]
   |> for_state "zacetek" [
     for_character '0' @@ switch_and_move "most" Left;
@@ -414,7 +460,7 @@ let reverse =
   |> for_state "zadnja_kocija" [
     for_characters "01" @@ move Left;
     for_character ' ' @@ switch_and_move "woops_mal_prevec" Right
-  ]
+  ] *)
 
 let primer_reverse = speed_run reverse "0000111001"
 (* 
