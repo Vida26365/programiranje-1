@@ -115,7 +115,6 @@ AB!DE
  Tudi tu je tip `t` abstrakten, zato poskrbite za učinkovitost in preglednost
  kode.
 [*----------------------------------------------------------------------------*)
-
 module type MACHINE = sig
   type t
   val make : state -> state list -> t
@@ -124,29 +123,51 @@ module type MACHINE = sig
   val step : t -> state -> Tape.t -> (state * Tape.t) option
 end
 
+
+module Stejti = Map.Make (
+  struct
+    type t = state * char
+    let compare (st, c) (stt, ch)= 
+      match String.compare st stt with
+      | 0 -> Char.compare c ch
+      | x -> x
+  end
+)
+
+
 module Machine : MACHINE = struct
   type t = {
     initial : state;
     states : state list;
-    transitions : (state * (char * (state * char * direction)) list) list
+    transitions : (state * char * direction) Stejti.t
+    (* (state * (char * (state * char * direction)) list) list *)
   }
   let make st stlst = {
     initial = st;
     states = stlst;
-    transitions = st::stlst |> List.map (fun x -> (x, []))
+    transitions =  Stejti.empty
+      (* st::stlst 
+      |> List.map (fun x -> (x, []))
+      |> List.sort (fun (st, _) (stt, _) -> String.compare st stt) *)
   }
   let initial rc = rc.initial
   let add_transition st ch s c d rc = 
-    let rec po_transitions =
+    { rc with transitions = Stejti.add (st, ch) (s, c, d) rc.transitions }
+    (* let rec po_transitions =
       function
-      | [] -> { rc with transitions = (st, [(ch, (s, c, d))])::rc.transitions}
+      | [] -> { rc with transitions = Stejti.add (st, ch) (s, c, d) rc.transitions }
       | (stt, lst)::xs when stt = st -> { rc with transitions = (stt, (ch, (s, c, d))::lst)::xs }
       | _::xs -> po_transitions xs
     in
-    po_transitions rc.transitions
+    po_transitions rc.transitions *)
 
   let step rc st tp =
-    let rec po_transitions = 
+    match Stejti.find_opt (st, Tape.read tp) rc.transitions with
+    | None -> None
+    | Some (s, c, d) -> Some (s, Tape.move d (Tape.write c tp))
+      (* Some (s, Tape.move d (Tape.write c tp)) *)
+    (* rc.transitions *)
+    (* let rec po_transitions = 
       function
       | [] -> None
       | (stt, lst)::xs when stt = st -> 
@@ -159,7 +180,7 @@ module Machine : MACHINE = struct
         po_znakih lst)
       | _::xs -> po_transitions xs
     in
-    po_transitions rc.transitions
+    po_transitions rc.transitions *)
 end
 
 (*----------------------------------------------------------------------------*
@@ -520,7 +541,7 @@ let to_unary =
     for_character '?' @@ write_switch_and_move '1' "oznaci_postavi" Left
   ]
 
-let primer_to_unary = slow_run to_unary "1010"
+let primer_to_unary = speed_run to_unary "1010"
 (* 
 1111111111
 ^
