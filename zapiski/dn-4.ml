@@ -128,8 +128,8 @@ module Stejti = Map.Make (
   struct
     type t = state * char
     let compare (st, c) (stt, ch)= 
-      match String.compare st stt with
-      | 0 -> Char.compare c ch
+      match Char.compare c ch with
+      | 0 -> String.compare st stt
       | x -> x
   end
 )
@@ -140,47 +140,23 @@ module Machine : MACHINE = struct
     initial : state;
     states : state list;
     transitions : (state * char * direction) Stejti.t
-    (* (state * (char * (state * char * direction)) list) list *)
   }
   let make st stlst = {
     initial = st;
     states = stlst;
     transitions =  Stejti.empty
-      (* st::stlst 
-      |> List.map (fun x -> (x, []))
-      |> List.sort (fun (st, _) (stt, _) -> String.compare st stt) *)
+
   }
   let initial rc = rc.initial
   let add_transition st ch s c d rc = 
     { rc with transitions = Stejti.add (st, ch) (s, c, d) rc.transitions }
-    (* let rec po_transitions =
-      function
-      | [] -> { rc with transitions = Stejti.add (st, ch) (s, c, d) rc.transitions }
-      | (stt, lst)::xs when stt = st -> { rc with transitions = (stt, (ch, (s, c, d))::lst)::xs }
-      | _::xs -> po_transitions xs
-    in
-    po_transitions rc.transitions *)
+
 
   let step rc st tp =
     match Stejti.find_opt (st, Tape.read tp) rc.transitions with
     | None -> None
     | Some (s, c, d) -> Some (s, Tape.move d (Tape.write c tp))
-      (* Some (s, Tape.move d (Tape.write c tp)) *)
-    (* rc.transitions *)
-    (* let rec po_transitions = 
-      function
-      | [] -> None
-      | (stt, lst)::xs when stt = st -> 
-        (let rec po_znakih = 
-          function
-          | [] -> None
-          | (ch, (s, c, d))::xs when ch = Tape.read tp -> Some (s, Tape.move d (Tape.write c tp))
-          | _::xs -> po_znakih xs
-        in
-        po_znakih lst)
-      | _::xs -> po_transitions xs
-    in
-    po_transitions rc.transitions *)
+
 end
 
 (*----------------------------------------------------------------------------*
@@ -316,12 +292,7 @@ let move (d : direction)(ch : char) (stt: state) : (Machine.t -> Machine.t)  = M
 let switch_and_move (stt : state) (d : direction)(ch : char) (st : state) : (Machine.t -> Machine.t) = Machine.add_transition st ch stt ch d
 let write_and_move (ch : char) (d : direction) (chr : char) (stt: state) : (Machine.t -> Machine.t) = Machine.add_transition stt chr stt ch d
 let write_switch_and_move (ch : char) (stt : state) (d : direction) (chr : char) (st: state) : (Machine.t -> Machine.t) = Machine.add_transition st chr stt ch d
-(* let woops (c : char) (st : state) (m : Machine.t) = 
-  print_string "char: ";
-  print_char c;
-  print_newline ();
-  print_string "state";
-  print_string st; *)
+
 
 let binary_increment' =
   Machine.make "right" ["carry"; "done"]
@@ -332,7 +303,7 @@ let binary_increment' =
   |> for_state "carry" [
     for_character '1' @@ switch_and_move "carry" Left;
     for_characters "0 " @@ write_switch_and_move '1' "done" Left
-  ]  
+  ]
 (* val binary_increment' : Machine.t = <abstr> *)
 
 let primer_binary_increment' = speed_run binary_increment' "1011"
@@ -400,7 +371,6 @@ let reverse =
   ]
   |> for_state "fjuhhh,_ubezali_smo_jim" [
     for_characters "01 " @@ switch_and_move "mirno smo na zacetku" Left
-    (* for_character ' ' @@ switch_and_move "k" Right *)
   ]
 
 let primer_reverse = speed_run reverse "0000111001"
@@ -507,46 +477,8 @@ let duplicate =
     for_character '1' @@ write_switch_and_move ' ' "k pisi 11 11" Right;
     for_character '!' @@ switch_and_move "pisi 11" Right
   ]
-  (* Machine.make "ukbvs" []
-  |> for_state "ukbvs" [
-    for_character '0' @@ write_switch_and_move ' ' "omzu" Right;
-    for_character '1' @@ write_switch_and_move ' ' "imzu" Right
-  ]
-  |> for_state "omzu" [
-    for_characters "01" @@ move Right;
-    for_character ' ' @@ write_switch_and_move '!' "vrtio" Right
-  ]
-  |> for_state "imzu" [
-    for_characters "01" @@ move Right;
-    for_character ' ' @@ write_switch_and_move '!' "vrtii" Right
-  ]
-  |> for_state "vrtio" [
-    for_characters "01!" @@ move Right;
-    for_character ' ' @@ write_switch_and_move '0' "vrtso" Right
-  ]
-  |> for_state "vrtii" [
-    for_characters "01!" @@ move Right;
-    for_character ' ' @@ write_switch_and_move '1' "vrtsi" Right
-  ]
-  |> for_state "vrtso" [
-    for_character ' ' @@ write_switch_and_move '0' "sodsbundm" Left
-  ]
-  |> for_state "vrtsi" [
-    for_character ' ' @@ write_switch_and_move '1' "sodsbundm" Left
-  ]
-  |> for_state "sodsbundm" [
-    for_characters "01!" @@ move Left;
-    for_character ' ' @@ switch_and_move "vsit" Right
-  ]
-  |> for_state "vsit" [
-    for_character '0' @@ write_switch_and_move ' ' "vrtio" Right;
-    for_character '1' @@ write_switch_and_move ' ' "vrtii" Right;
-    for_character '!' @@ write_switch_and_move ' ' "tanatos" Right
-  ] *)
 
-(* print_string "Trenutni_primer: "; *)
 let primer_duplicate = 
-  (* print_string "Trenutni_primer: ";  *)
   speed_run duplicate "010011"
 (* 
 001100001111       
@@ -598,119 +530,6 @@ let to_unary =
     for_character '#' @@ write_switch_and_move ' ' "- zgodba po resničnih dogodkih (Ok, zelo prilagojenih dogodkih)" Right
   ]
 
-
-  (* |> for_state "ali mogoce kdo slucajno rabi turingov stroj da mu izpise prazen niz" [
-    for_character '0' @@ write_switch_and_move ' ' "Resno? Resno?" Right;
-    for_character '1' @@ switch_and_move "potsavi #" Right
-  ]
-  |> for_state "potsavi #" [
-    for_characters "01" @@ move Right;
-    for_character ' ' @@ write_switch_and_move '#' "prevzem posiljke" Left
-  ]
-  |> for_state "prevzem posiljke" [
-    for_character '1' @@ write_switch_and_move '0' "preverim ce moram jutri spet prevzeti paket" Left;
-    for_character '0' @@ write_switch_and_move '1' "Aaah, odnesli so jo na posto" Left;
-    for_characters "#" @@ move Left
-  ]
-  |> for_state "preverim ce moram jutri spet prevzeti paket" [
-    for_characters "01" @@ switch_and_move  "odlozi posiljko doma" Right;
-    for_character ' ' @@ switch_and_move "koncno n rabim vec prevzemati teh nadleznih paketov" Right
-  ]
-  |> for_state "odlozi posiljko doma" [
-    for_characters "01#" @@ move Right;
-    for_character ' ' @@ write_switch_and_move '1' "prevzem posiljke" Left
-  ]
-  |> for_state "Aaah, odnesli so jo na posto" [
-    for_character '1' @@ write_switch_and_move '0' "preverim ce moram jutri spet prevzeti paket" Left;
-    for_character '0' @@ write_and_move '1' Left
-  ]
-  |> for_state "koncno n rabim vec prevzemati teh nadleznih paketov" [
-    for_character '0' @@ write_switch_and_move ' ' "odlozi posiljko doma" Right;
-    for_characters " " @@ switch_and_move "koncno n rabim vec prevzemati teh nadleznih paketov" Right
-  ] *)
-  (* Machine.make "postavi #" []
-  |> for_state "postavi #" [
-    for_characters "01" @@ move Left;
-    for_character ' ' @@ write_switch_and_move '#' "do konca" Right
-  ]
-  |> for_state "do konca" [
-    for_characters "01" @@ move Right;
-    for_character ' ' @@ write_switch_and_move '!' "prevzem posiljke" Left
-  ]
-  |> for_state "prevzem posiljke" [
-    for_character '1' @@ write_switch_and_move '0' "odlozi posiljko doma" Right;
-    for_character '0' @@ write_switch_and_move ' ' "Aaah, odnesli so jo na posto" Left;
-    for_characters " !" @@ move Left
-  ]
-  |> for_state "odlozi posiljko doma" [
-    for_characters "01!" @@ move Right;
-    for_character ' ' @@ write_switch_and_move '!' "prevzem posiljke" Left
-  ]
-  |> for_state "Aaah, odnesli so jo na posto" [
-    for_character '1' @@ write_switch_and_move '0' "odlozi posiljko doma" Right;
-    for_character '0' @@ write_switch_and_move '1' "odlozi posiljko doma" Right
-  ] *)
-
-   (* Machine.make "zacetek" ["postavi!"; "postavi"; "nazaj"; "beri"; "podvoji"; "oznaci"; "zapisi"; "izbrisi?"; "podvoji_postavi"; "oznaci_postavi"; "zapisi_postavi"; "izbrisi?_postavi"] *)
-  (* |> for_state "preveri ce si dobil se kaj in odlozi posiljko doma" [
-    for_characters "01!" @@ move Right;
-    for_character ' ' @@ switch_and_move '1' "odlozi posiljko doma" Left
-  ] *)
-  (* Machine.make "zacetek" ["postavi!"; "postavi"; "nazaj"; "beri"; "podvoji"; "oznaci"; "zapisi"; "izbrisi?"; "podvoji_postavi"; "oznaci_postavi"; "zapisi_postavi"; "izbrisi?_postavi"]
-  |> for_state "zacetek" [
-    for_character '1' @@ write_switch_and_move ' ' "postavi!" Right;
-    for_character '0' @@ write_switch_and_move ' ' "done" Right
-  ]
-  |> for_state "postavi!" [
-    for_characters "01!" @@ move Right;
-    for_character ' ' @@ write_switch_and_move '!' "postavi" Right
-  ]
-  |> for_state "postavi" [
-    for_characters "01!" @@ move Right;
-    for_character ' ' @@ write_switch_and_move '1' "nazaj" Left
-  ]
-  |> for_state "nazaj" [
-    for_characters "01!" @@ move Left;
-    for_character ' ' @@ switch_and_move "beri" Right
-  ]
-  |> for_state "beri" [
-    for_character '1' @@ write_switch_and_move ' ' "podvoji_postavi" Right;
-    for_character '0' @@ write_switch_and_move ' ' "podvoji" Right;
-    for_character '!' @@ write_switch_and_move ' ' "done" Right
-  ]
-  |> for_state "podvoji" [
-    for_characters "01!" @@ move Right;
-    for_character ' ' @@ switch_and_move "oznaci" Left
-  ]
-  |> for_state "oznaci" [
-    for_character '1' @@ write_switch_and_move '?' "zapisi" Right;
-    for_character '!' @@ switch_and_move "nazaj" Left
-  ]
-  |> for_state "zapisi" [
-    for_character '1' @@ move Right;
-    for_character ' ' @@ write_switch_and_move '1' "izbrisi?" Left
-  ]
-  |> for_state "izbrisi?" [
-    for_character '1' @@ move Left;
-    for_character '?' @@ write_switch_and_move '1' "oznaci" Left
-  ]
-  |> for_state "podvoji_postavi" [
-    for_characters "01!" @@ move Right;
-    for_character ' ' @@ switch_and_move "oznaci_postavi" Left
-  ]
-  |> for_state "oznaci_postavi" [
-    for_character '1' @@ write_switch_and_move '?' "zapisi_postavi" Right;
-    for_character '!' @@ switch_and_move "postavi" Left
-  ]
-  |> for_state "zapisi_postavi" [
-    for_character '1' @@ move Right;
-    for_character ' ' @@ write_switch_and_move '1' "izbrisi?_postavi" Left
-  ]
-  |> for_state "izbrisi?_postavi" [
-    for_character '1' @@ move Left;
-    for_character '?' @@ write_switch_and_move '1' "oznaci_postavi" Left
-  ] *)
-
 let primer_to_unary = speed_run to_unary "1010"
 (* 
 1111111111
@@ -729,36 +548,54 @@ let primer_to_unary = speed_run to_unary "1010"
 [*----------------------------------------------------------------------------*)
 
 let to_binary = 
-  Machine.make "klicajaj" []
-  |> for_state "klicajaj" [
-    for_characters "1" @@ write_switch_and_move '!' "desnanje" Right
+  Machine.make "z1?" []
+  |> for_state "z1?" [
+    for_character '1' @@ write_switch_and_move '1' "z?" Right
   ]
-  |> for_state "desnanje" [
-    for_characters "01!" @@ move Right;
-    for_character ' ' @@ switch_and_move "zbrisi_enko" Left
+  |> for_state "z?" [
+    for_character '1' @@ write_switch_and_move '?' "b11" Right;
   ]
-  |> for_state "zbrisi_enko" [
-    for_character '1' @@ write_switch_and_move ' ' "goinc" Left;
-    for_character '!' @@ write_switch_and_move ' ' "zadnji_inc" Left
+  |> for_state "b11" [
+    for_character ' ' @@ move Right;
+    for_character '1' @@ write_switch_and_move ' ' "b1" Right
+  ]
+  |> for_state "b1" [
+    for_character '1' @@ write_switch_and_move ' ' "sodo?" Right;
+    for_character ' ' @@ switch_and_move "liho" Left
+  ]
+  |> for_state "sodo?" [
+    for_character '1' @@ switch_and_move "goinc" Left;
+    for_character ' ' @@ switch_and_move "sodo" Left
   ]
   |> for_state "goinc" [
-    for_character '1' @@ move Left;
-    for_character '!' @@ switch_and_move "inc" Left
+    for_characters " 1" @@ move Left;
+    for_character '?' @@ switch_and_move "inc" Left
   ]
   |> for_state "inc" [
-    for_characters " 0" @@ write_switch_and_move '1' "desnanje" Right;
+    for_characters " 0" @@ write_switch_and_move '1' "gob" Right;
     for_character '1' @@ write_and_move '0' Left
   ]
-  |> for_state "zadnji_inc" [
-    for_characters " 0" @@ write_switch_and_move '1' "na_zacetek" Left;
+  |> for_state "gob" [
+    for_characters "01" @@ move Right;
+    for_character '?' @@ switch_and_move "b11" Right
+  ]
+  |> for_state "liho" [
+    for_character ' ' @@ move Left;
+    for_character '?' @@ write_switch_and_move '1' "finito" Left
+  ]
+  |> for_state "sodo" [
+    for_character ' ' @@ move Left;
+    for_character '?' @@ write_switch_and_move '0' "finc" Left
+  ]
+  |> for_state "finc" [
+    for_characters " 0" @@ write_switch_and_move '1' "finito" Left;
     for_character '1' @@ write_and_move '0' Left
   ]
-  |> for_state "na_zacetek" [
-    for_characters "10" @@ move Left;
-    for_character ' ' @@ switch_and_move "done" Right
+  |> for_state "finito"  [
+    for_characters "01" @@ move Left;
+    for_character ' ' @@ switch_and_move ":)" Right
   ]
-
-let primer_to_binary = speed_run to_binary (String.make 42 '1')
+let primer_to_binary = speed_run to_binary (String.make 172868378 '1')
 (* 
 101010                                           
 ^
