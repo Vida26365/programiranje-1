@@ -594,7 +594,7 @@ let to_unary =
     for_characters "01" @@ move Left;
     for_character '#' @@ switch_and_move "prevzem posiljke" Left
   ]
-  |> for_state "O ne, drzava se je odlocila privatizirati postne storitve in jih je prodala podjetju Definitivnonamjemarzaljudiinneprofit org., ki je ugotovilo da je v temu prevec zakotnem kraju premalo ljudi da bi se splacalo tu nditi storitve, zato so zaprli poslovalnico in nehali nuditi soritve na dom zato kot prebivalec tega kraja sedaj ne morem dobiti posiljke!" [
+  |> for_state "O ne, drzava se je odlocila privatizirati postne storitve in jih je prodala podjetju Definitivnonamjemarzaljudiinneprofit org., ki je ugotovilo da je v temu prevec zakotnem kraju premalo ljudi da bi se splacalo imeti odprto poslovalnico, zato so jo zaprli in nehali nuditi soritve na dom, sedaj kot prebivalec tega kraja ne morem dobiti posiljke!" [
     for_character '#' @@ write_switch_and_move ' ' "- zgodba po resničnih dogodkih (Ok, zelo prilagojenih dogodkih)" Right
   ]
 
