@@ -121,78 +121,42 @@ module type MACHINE = sig
   val initial : t -> state
   val add_transition : state -> char -> state -> char -> direction -> t -> t
   val step : t -> state -> Tape.t -> (state * Tape.t) option
+  val copy : t -> t
 end
 
 
-module Stejti = Map.Make (
+module StChH = Hashtbl.Make (
   struct
     type t = state * char
-    let compare (st, c) (stt, ch)= 
-      match Char.compare c ch with
-      | 0 -> String.compare st stt
-      | x -> x
-  end
-)
-
-module  Chari = struct
-  type t = char
-  let compare = Char.compare
-end
-
-module Chstbl = Hashtbl.Make (
-  struct
-    type t = char
-    let equal = Char.equal
+    let equal (s, c) (st, ch) = (String.equal s st) && (Char.equal c ch)
     let hash = Hashtbl.hash
   end
 )
-
-(* module Hshtbl = Hashtbl.Make (
-  struct
-    type t = state * char
-    let equal s c = String.equal s && Char.equal c
-    let hash = Hashtbl.hash
-  end
-) *)
-
-module SCtbl = Hashtbl.Make (
-  struct
-    type t = state * char
-    let equal (s, c) (st, ch) = String.equal s st && Char.equal c ch
-    let hash = Hashtbl.hash
-  end
-)
-
-
 
 
 module Machine : MACHINE = struct
   type t = {
     initial : state;
     states : state list;
-    transitions : (state * char * direction) SCtbl.t
-    (* (state * char * direction) Stejti.t *)
+    transitions : (state * char * direction) StChH.t
   }
   let make st stlst = {
     initial = st;
     states = stlst;
-    transitions = SCtbl.create (List.length stlst)
-    
-     (* Hashtbl.create (List.length stlst) *)
+    transitions =  StChH.create (List.length stlst)
 
   }
   let initial rc = rc.initial
-  let add_transition st ch s c d rc =
-    SCtbl.add rc.transitions (st, ch) (s, c, d);
-    (* rc.transitions *)
-    (* { rc with transitions = Hshtbl.add rc.transitions st (Chari.add ch (s, c, d) Hasrc.transitions) } *)
-    (* { rc with transitions = Stejti.add (st, ch) (s, c, d) rc.transitions } *)
-
+  let add_transition st ch s c d rc = 
+    StChH.replace rc.transitions (st, ch) (s, c, d);
+    rc
 
   let step rc st tp =
-    match Stejti.find_opt (st, Tape.read tp) rc.transitions with
+    match StChH.find_opt rc.transitions (st, Tape.read tp) with
     | None -> None
     | Some (s, c, d) -> Some (s, Tape.move d (Tape.write c tp))
+
+  let copy m = { m with transitions = StChH.copy m.transitions }
 
 end
 
@@ -424,7 +388,6 @@ let primer_reverse = speed_run reverse "0000111001"
 (*----------------------------------------------------------------------------*
  Sestavite Turingov stroj, ki podvoji začetni niz.
 [*----------------------------------------------------------------------------*)
-
 
 let duplicate = 
   Machine.make "a prvi beri" []
