@@ -121,15 +121,13 @@ module type MACHINE = sig
   val initial : t -> state
   val add_transition : state -> char -> state -> char -> direction -> t -> t
   val step : t -> state -> Tape.t -> (state * Tape.t) option
-  val copy : t -> t
 end
 
 
-module StChH = Hashtbl.Make (
+module StMap = Map.Make (
   struct
-    type t = state * char
-    let equal (s, c) (st, ch) = (String.equal s st) && (Char.equal c ch)
-    let hash = Hashtbl.hash
+    type t = state
+    let compare = String.compare
   end
 )
 
@@ -138,26 +136,29 @@ module Machine : MACHINE = struct
   type t = {
     initial : state;
     states : state list;
-    transitions : (state * char * direction) StChH.t
+    transitions : (state * char * direction) array StMap.t
   }
   let make st stlst = {
     initial = st;
     states = stlst;
-    transitions =  StChH.create ((List.length stlst) + 1)
-
+    transitions = 
+      let empt = StMap.empty in
+      let rec po_stlst mp = 
+        function
+        | [] -> StMap.add st (Array.make 255 ("..N0?-!StATe*", ' ', Right)) mp
+        | x::xs -> po_stlst (StMap.add x (Array.make 255 ("..N0?-!StATe*", ' ', Right)) mp) xs
+      in
+      po_stlst empt stlst
   }
   let initial rc = rc.initial
   let add_transition st ch s c d rc = 
-    StChH.replace rc.transitions (st, ch) (s, c, d);
+    (StMap.find st rc.transitions).(Char.code ch) <- (s, c, d);
     rc
 
   let step rc st tp =
-    match StChH.find_opt rc.transitions (st, Tape.read tp) with
-    | None -> None
-    | Some (s, c, d) -> Some (s, Tape.move d (Tape.write c tp))
-
-  let copy m = { m with transitions = StChH.copy m.transitions }
-
+    match (StMap.find st rc.transitions).(Char.code (Tape.read tp)) with
+    | ("..N0?-!StATe*", _, _) -> None
+    | (s, c, d) -> Some (s, Tape.move d (Tape.write c tp))
 end
 
 (*----------------------------------------------------------------------------*
