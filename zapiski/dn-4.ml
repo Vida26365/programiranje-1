@@ -143,7 +143,7 @@ module Machine : MACHINE = struct
   let make st stlst = {
     initial = st;
     states = stlst;
-    transitions =  StChH.create (List.length stlst)
+    transitions =  StChH.create ((List.length stlst) + 1)
 
   }
   let initial rc = rc.initial
