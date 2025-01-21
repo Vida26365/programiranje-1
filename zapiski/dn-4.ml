@@ -134,22 +134,59 @@ module Stejti = Map.Make (
   end
 )
 
+module  Chari = struct
+  type t = char
+  let compare = Char.compare
+end
+
+module Chstbl = Hashtbl.Make (
+  struct
+    type t = char
+    let equal = Char.equal
+    let hash = Hashtbl.hash
+  end
+)
+
+(* module Hshtbl = Hashtbl.Make (
+  struct
+    type t = state * char
+    let equal s c = String.equal s && Char.equal c
+    let hash = Hashtbl.hash
+  end
+) *)
+
+module SCtbl = Hashtbl.Make (
+  struct
+    type t = state * char
+    let equal (s, c) (st, ch) = String.equal s st && Char.equal c ch
+    let hash = Hashtbl.hash
+  end
+)
+
+
+
 
 module Machine : MACHINE = struct
   type t = {
     initial : state;
     states : state list;
-    transitions : (state * char * direction) Stejti.t
+    transitions : (state * char * direction) SCtbl.t
+    (* (state * char * direction) Stejti.t *)
   }
   let make st stlst = {
     initial = st;
     states = stlst;
-    transitions =  Stejti.empty
+    transitions = SCtbl.create (List.length stlst)
+    
+     (* Hashtbl.create (List.length stlst) *)
 
   }
   let initial rc = rc.initial
-  let add_transition st ch s c d rc = 
-    { rc with transitions = Stejti.add (st, ch) (s, c, d) rc.transitions }
+  let add_transition st ch s c d rc =
+    SCtbl.add rc.transitions (st, ch) (s, c, d);
+    (* rc.transitions *)
+    (* { rc with transitions = Hshtbl.add rc.transitions st (Chari.add ch (s, c, d) Hasrc.transitions) } *)
+    (* { rc with transitions = Stejti.add (st, ch) (s, c, d) rc.transitions } *)
 
 
   let step rc st tp =
@@ -387,6 +424,7 @@ let primer_reverse = speed_run reverse "0000111001"
 (*----------------------------------------------------------------------------*
  Sestavite Turingov stroj, ki podvoji začetni niz.
 [*----------------------------------------------------------------------------*)
+
 
 let duplicate = 
   Machine.make "a prvi beri" []
