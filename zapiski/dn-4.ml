@@ -136,27 +136,42 @@ module Machine : MACHINE = struct
   type t = {
     initial : state;
     states : state list;
-    transitions : ((state * char * direction) option ) array StMap.t
+    transitions :(((state * char * direction) option ) array) StMap.t array
+    (* ((state * char * direction) option ) array StMap.t *)
   }
   let make st stlst = {
     initial = st;
     states = stlst;
     transitions = 
-      let empt = StMap.empty in
-      let rec po_stlst mp = 
+      let emparr = Array.make 256 (StMap.empty) in
+      let rec po_stlst =
         function
-        | [] -> StMap.add st (Array.make 255 None) mp
-        | x::xs -> po_stlst (StMap.add x (Array.make 255 None) mp) xs
+        | [] -> (
+          let i = (Char.code st.[0]) + 1 in
+          emparr.(i) <- (StMap.add (String.sub st 1 ((String.length st) - 1)) (Array.make 255 None) emparr.(i)); 
+          )
+        | ""::lst -> emparr.(0) <- (StMap.add "" (Array.make 255 None) emparr.(0)); po_stlst lst
+        | stt::lst -> 
+          let i = (Char.code stt.[0]) + 1 in
+          emparr.(i) <- (StMap.add (String.sub stt 1 ((String.length stt) - 1)) (Array.make 255 None) emparr.(i)); 
+          po_stlst lst
       in
-      po_stlst empt stlst
+      po_stlst stlst;
+      emparr
   }
   let initial rc = rc.initial
   let add_transition st ch s c d rc = 
-    (StMap.find st rc.transitions).(Char.code ch) <- Some (s, c, d);
+    let i = (Char.code st.[0]) + 1 in
+    let map = rc.transitions.(i) in
+    let subst = String.sub st 1 ((String.length st) - 1) in
+    (StMap.find subst map).(Char.code ch) <- Some (s, c, d);
     rc
 
   let step rc st tp =
-    match (StMap.find st rc.transitions).(Char.code (Tape.read tp)) with
+    let i = (Char.code st.[0]) + 1 in
+    let map = rc.transitions.(i) in
+    let subst = String.sub st 1 ((String.length st) - 1) in
+    match (StMap.find subst map).(Char.code (Tape.read tp)) with
     | None -> None
     | Some (s, c, d) -> Some (s, Tape.move d (Tape.write c tp))
 end
