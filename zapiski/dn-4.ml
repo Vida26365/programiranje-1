@@ -136,7 +136,7 @@ module Machine : MACHINE = struct
   type t = {
     initial : state;
     states : state list;
-    transitions : (state * char * direction) array StMap.t
+    transitions : ((state * char * direction) option ) array StMap.t
   }
   let make st stlst = {
     initial = st;
@@ -145,20 +145,20 @@ module Machine : MACHINE = struct
       let empt = StMap.empty in
       let rec po_stlst mp = 
         function
-        | [] -> StMap.add st (Array.make 255 ("..N0?-!StATe*", ' ', Right)) mp
-        | x::xs -> po_stlst (StMap.add x (Array.make 255 ("..N0?-!StATe*", ' ', Right)) mp) xs
+        | [] -> StMap.add st (Array.make 255 None) mp
+        | x::xs -> po_stlst (StMap.add x (Array.make 255 None) mp) xs
       in
       po_stlst empt stlst
   }
   let initial rc = rc.initial
   let add_transition st ch s c d rc = 
-    (StMap.find st rc.transitions).(Char.code ch) <- (s, c, d);
+    (StMap.find st rc.transitions).(Char.code ch) <- Some (s, c, d);
     rc
 
   let step rc st tp =
     match (StMap.find st rc.transitions).(Char.code (Tape.read tp)) with
-    | ("..N0?-!StATe*", _, _) -> None
-    | (s, c, d) -> Some (s, Tape.move d (Tape.write c tp))
+    | None -> None
+    | Some (s, c, d) -> Some (s, Tape.move d (Tape.write c tp))
 end
 
 (*----------------------------------------------------------------------------*
@@ -331,7 +331,7 @@ let primer_binary_increment' = speed_run binary_increment' "1011"
  Sestavite Turingov stroj, ki začetni niz obrne na glavo.
 [*----------------------------------------------------------------------------*)
 let reverse = 
-  Machine.make "prva_izvidnica" []
+  Machine.make "prva_izvidnica" ["izvidnica"; "postavljanje_tracnic"; "odlaganje_vrednih_kamnin"; "odlaganje_nicvrednih_kamnin"; "nazaj_do_tracnic"; "aaaa_indijanci,_pospravi_stvari_in_tracnice!"; "pospravi_tracnice_in_odnesi_vredne_kamnine"; "pospravi_tracnice_in_odnesi_nicvredne_kamnine"; "fjuhhh,_ubezali_smo_jim"; "mirno smo na zacetku"]	
   |> for_state "prva_izvidnica" [
     for_character '!' @@ move Right;
     for_characters "01" @@ switch_and_move "izvidnica" Right;
@@ -391,7 +391,7 @@ let primer_reverse = speed_run reverse "0000111001"
 [*----------------------------------------------------------------------------*)
 
 let duplicate = 
-  Machine.make "a prvi beri" []
+  Machine.make "a prvi beri" ["b prvi beri 0"; "c prvi beri 1"; "d prvi pojdi pisi 0 0"; "e prvi pojdi pisi 0 1"; "f prvi pojdi pisi 1 0"; "g prvi pojdi pisi 1 1"; "h pisi 00 00"; "i pisi 00 11"; "j pisi 11 00"; "k pisi 11 11"; "l pisi 0 00"; "m pisi 0 11"; "n pisi 1 00"; "o pisi 1 11"; "p pisi 00"; "r pisi 11"; "s pisi 0"; "q pisi 1"; "t pojdi beri"; "u beri"; "v beri 0"; "z beri 1"; "x koncano na glavi"]
   |> for_state "a prvi beri" [
     for_character '0' @@ write_switch_and_move ' ' "b prvi beri 0" Right;
     for_character '1' @@ write_switch_and_move ' ' "c prvi beri 1" Right;
@@ -498,7 +498,16 @@ let primer_duplicate =
 [*----------------------------------------------------------------------------*)
 
 let to_unary = 
-  Machine.make "ali mogoce kdo slucajno rabi turingov stroj da mu izpise prazen niz" []
+  Machine.make "ali mogoce kdo slucajno rabi turingov stroj da mu izpise prazen niz" 
+  ["Resno? Resno?"; 
+  "potsavi #"; 
+  "prevzem posiljke"; 
+  "preverim ce moram jutri spet prevzeti paket"; 
+  "O ne, drzava se je odlocila privatizirati postne storitve in jih je prodala podjetju Definitivnonamjemarzaljudiinneprofit org., ki je ugotovilo da je v temu prevec zakotnem kraju premalo ljudi da bi se splacalo imeti odprto poslovalnico, zato so jo zaprli in nehali nuditi soritve na dom, sedaj kot prebivalec tega kraja ne morem dobiti posiljke!"; 
+  "odlozi posiljko doma";
+  "grem prevzet posiljko";
+  "koncno n rabim vec prevzemati teh nadleznih paketov";
+  "- zgodba po resničnih dogodkih (Ok, zelo prilagojenih dogodkih)"]
   |> for_state "ali mogoce kdo slucajno rabi turingov stroj da mu izpise prazen niz" [
     for_character '0' @@ write_switch_and_move ' ' "Resno? Resno?" Right;
     for_character '1' @@ switch_and_move "potsavi #" Right
@@ -510,7 +519,7 @@ let to_unary =
   |> for_state "prevzem posiljke" [
     for_character '1' @@ write_switch_and_move '0' "preverim ce moram jutri spet prevzeti paket" Left;
     for_character '0' @@ write_and_move '1'  Left;
-    for_character ' ' @@ switch_and_move "O ne, drzava se je odlocila privatizirati postne storitve in jih je prodala podjetju Definitivnonamjemarzaljudiinneprofit org., ki je ugotovilo da je v temu prevec zakotnem kraju premalo ljudi da bi se splacalo tu nditi storitve, zato so zaprli poslovalnico in nehali nuditi soritve na dom zato kot prebivalec tega kraja sedaj ne morem dobiti posiljke!" Right
+    for_character ' ' @@ switch_and_move "O ne, drzava se je odlocila privatizirati postne storitve in jih je prodala podjetju Definitivnonamjemarzaljudiinneprofit org., ki je ugotovilo da je v temu prevec zakotnem kraju premalo ljudi da bi se splacalo imeti odprto poslovalnico, zato so jo zaprli in nehali nuditi soritve na dom, sedaj kot prebivalec tega kraja ne morem dobiti posiljke!" Right
   ]
   |> for_state "preverim ce moram jutri spet prevzeti paket" [
     for_characters "01" @@ switch_and_move  "odlozi posiljko doma" Right;
@@ -550,7 +559,7 @@ let primer_to_unary = speed_run to_unary "1010"
 [*----------------------------------------------------------------------------*)
 
 let to_binary = 
-  Machine.make "z1?" []
+  Machine.make "z1?" ["z?"; "b11"; "b1"; "sodo?"; "goinc"; "inc"; "gob"; "liho"; "sodo"; "finc"; "finito"]
   |> for_state "z1?" [
     for_character '1' @@ write_switch_and_move '1' "z?" Right
   ]
