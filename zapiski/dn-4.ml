@@ -115,13 +115,86 @@ AB!DE
  Tudi tu je tip `t` abstrakten, zato poskrbite za učinkovitost in preglednost
  kode.
 [*----------------------------------------------------------------------------*)
+module StMap = Map.Make (
+  struct
+    type t = state
+    let compare = String.compare
+  end
+)
+
 module type MACHINE = sig
   type t
   val make : state -> state list -> t
   val initial : t -> state
   val add_transition : state -> char -> state -> char -> direction -> t -> t
   val step : t -> state -> Tape.t -> (state * Tape.t) option
+  val quick_steep : ((int * char * direction) option ) array array -> int -> Tape.t -> (int * Tape.t) option
+  val dobi_indeks : state -> int -> state list -> int
 end
+
+module Machine : MACHINE = struct
+  type t = {
+    initial : state;
+    states : state list;
+    transitions : ((state * char * direction) option ) array StMap.t;
+    funkcije : ((int * char * direction) option ) array array
+  }
+  let make st stlst = {
+    initial = st;
+    states = stlst;
+    transitions = 
+      (let empt = StMap.empty in
+      let rec po_stlst mp = 
+        function
+        | [] -> StMap.add st (Array.make 255 None) mp
+        | x::xs -> po_stlst (StMap.add x (Array.make 255 None) mp) xs
+      in
+      po_stlst empt stlst
+      );
+    funkcije = 
+      Array.make ((List.length stlst) + 1) (Array.make 255 None)
+  }
+  let initial rc = rc.initial
+
+  let rec dobi_indeks (stt:state) (i:int) = 
+    function
+    | [] -> failwith "stanja ni med stanji"
+    | x::xs when x = stt -> i
+    | x::xs -> dobi_indeks stt (i+1) xs
+
+  let add_transition st ch s c d rc = 
+    (Array.copy (StMap.find st rc.transitions)).(Char.code ch) <- Some (s, c, d);
+    rc.funkcije.(dobi_indeks st 0 (rc.initial::rc.states)).(Char.code ch) <- Some ((dobi_indeks s 0 (rc.initial::rc.states)), c, d);
+    rc
+
+
+  let step rc st tp =
+    match (StMap.find st rc.transitions).(Char.code (Tape.read tp)) with
+    | None -> None
+    | Some (s, c, d) -> Some (s, Tape.move d (Tape.write c tp))
+
+  let quick_steep funkcije sti tp =
+    match funkcije.(sti).(Char.code (Tape.read tp)) with
+    | None -> None
+    | Some (s, c, d) -> Some (s, Tape.move d (Tape.write c tp))
+
+end
+
+
+
+(* 
+module type MASCHINA = sig
+  type t
+  val step : t -> int -> Tape.t -> (int * Tape.t) option
+  val from_machine : Machine.t -> t
+  val dobi_indeks : state -> int -> state list -> int
+end
+
+
+
+
+
+
 
 
 module StMap = Map.Make (
@@ -131,50 +204,100 @@ module StMap = Map.Make (
   end
 )
 
+module type MACHINE = sig
+  type t
+  val make : state -> state list -> t
+  val initial : t -> state
+  val record : t -> (state * state list * (((state * char * direction) option ) array StMap.t))
+  val add_transition : state -> char -> state -> char -> direction -> t -> t
+  val step : t -> state -> Tape.t -> (state * Tape.t) option
+end
+
+
 
 module Machine : MACHINE = struct
   type t = {
     initial : state;
     states : state list;
-    transitions :(((state * char * direction) option ) array) StMap.t array
-    (* ((state * char * direction) option ) array StMap.t *)
+    transitions : ((state * char * direction) option ) array StMap.t
   }
   let make st stlst = {
     initial = st;
     states = stlst;
     transitions = 
-      let emparr = Array.make 256 (StMap.empty) in
-      let rec po_stlst =
+      let empt = StMap.empty in
+      let rec po_stlst mp = 
         function
-        | [] -> (
-          let i = (Char.code st.[0]) + 1 in
-          emparr.(i) <- (StMap.add (String.sub st 1 ((String.length st) - 1)) (Array.make 255 None) emparr.(i)); 
-          )
-        | ""::lst -> emparr.(0) <- (StMap.add "" (Array.make 255 None) emparr.(0)); po_stlst lst
-        | stt::lst -> 
-          let i = (Char.code stt.[0]) + 1 in
-          emparr.(i) <- (StMap.add (String.sub stt 1 ((String.length stt) - 1)) (Array.make 255 None) emparr.(i)); 
-          po_stlst lst
+        | [] -> StMap.add st (Array.make 255 None) mp
+        | x::xs -> po_stlst (StMap.add x (Array.make 255 None) mp) xs
       in
-      po_stlst stlst;
-      emparr
+      po_stlst empt stlst
   }
   let initial rc = rc.initial
+  let record rc = (rc.initial, rc.states, rc.transitions)
   let add_transition st ch s c d rc = 
-    let i = (Char.code st.[0]) + 1 in
-    let map = rc.transitions.(i) in
-    let subst = String.sub st 1 ((String.length st) - 1) in
-    (StMap.find subst map).(Char.code ch) <- Some (s, c, d);
+    (StMap.find st rc.transitions).(Char.code ch) <- Some (s, c, d);
     rc
 
   let step rc st tp =
-    let i = (Char.code st.[0]) + 1 in
-    let map = rc.transitions.(i) in
-    let subst = String.sub st 1 ((String.length st) - 1) in
-    match (StMap.find subst map).(Char.code (Tape.read tp)) with
+    match (StMap.find st rc.transitions).(Char.code (Tape.read tp)) with
     | None -> None
-    | Some (s, c, d) -> Some (s, Tape.move d (Tape.write c tp))
+    | Some (s, c, d) -> Some (s, Tape.move d (Tape.write c tp)) 
+
 end
+
+module type MASCHINA = sig
+  type t
+  val step : t -> int -> Tape.t -> (int * Tape.t) option
+  val from_machine : Machine.t -> t
+  val dobi_indeks : state -> int -> state list -> int
+end
+
+module Maschina : MASCHINA = 
+  struct
+    type t = (int * char * direction) option array array
+  
+    let step msch (st:int) tp = 
+      match msch.(st).(Char.code (Tape.read tp)) with
+      | None -> 
+        print_string "None";
+        None
+      | Some (s, c, d) -> 
+        print_int s;
+        Some (s, Tape.move d (Tape.write c tp))
+    
+      let rec dobi_indeks (stt:state) (i:int) = 
+        function
+        | [] -> failwith "stanja ni med stanji"
+        | x::xs when x = stt -> i
+        | x::xs -> dobi_indeks stt (i+1) xs
+
+    let from_machine m = 
+      let (st, stlst, transitions) = Machine.(record) m in
+      let prehodi = Array.make ((List.length stlst) + 1) (Array.make 255 None) in
+      let lst = StMap.bindings transitions in
+      
+      let rec po_st = 
+        function
+        | [] -> prehodi
+        | (st, arr)::xs ->
+          let i = dobi_indeks st 0 (st::stlst) in
+          let narr = Array.map (function
+            | None -> None
+            | Some (s, c, d) -> 
+              print_string ("stanje: " ^ st ^ "  char: ");
+              print_char c;
+              print_newline ();
+              Some ((dobi_indeks s 0 (st::stlst)), c, d)
+          ) arr in
+
+          prehodi.(i) <- narr;
+          po_st xs
+        in
+      po_st lst
+  end *)
+
+
 
 (*----------------------------------------------------------------------------*
  Primer stroja "Binary Increment" na <http://turingmachine.io> lahko
@@ -251,7 +374,17 @@ done
 *)
 (* val primer_slow_run : unit = () *)
 
-let speed_run m niz = 
+(* let speed_run m niz = 
+  let tp = Tape.make niz in
+  let msch = Maschina.from_machine m in
+  let rec pom stt tp = 
+    match (Maschina.step msch stt tp) with
+    | None -> Tape.print tp
+    | Some (st, tap) -> pom st tap
+  in
+  pom 0 tp *)
+
+(* let speed_run m niz = 
   let tp = Tape.make niz in
   let st = Machine.initial m in
   let rec pom stt tp =
@@ -259,10 +392,38 @@ let speed_run m niz =
     | None -> Tape.print tp
     | Some (st, tap) -> pom st tap
     in
-  pom st tp
+  pom st tp *)
 
-(* let primer_speed_run =
-  speed_run binary_increment "1011" *)
+let speed_run m niz = 
+  let tp = Tape.make niz in
+  (* let st = Machine.initial m in *)
+  let funkcije = Machine.funkcije m in
+  let rec pom stt tp =
+    match Machine.quick_steep funkcije stt tp with
+    | None -> Tape.print tp
+    | Some (st, tap) -> pom st tap
+    in
+  pom 0 tp
+
+let primer_speed_run =
+  speed_run binary_increment "1011"
+
+let busy_beaver5 =
+  Machine.(make "A" ["B"; "C"; "D"; "E"]
+  |> add_transition "A" ' ' "B" '1' Right
+  |> add_transition "A" '1' "C" '1' Left
+  |> add_transition "B" ' ' "C" '1' Right
+  |> add_transition "B" '1' "B" '1' Right
+  |> add_transition "C" ' ' "D" '1' Right
+  |> add_transition "C" '1' "E" ' ' Left
+  |> add_transition "D" ' ' "A" '1' Left
+  |> add_transition "D" '1' "D" '1' Left
+  |> add_transition "E" '1' "A" ' ' Left
+)
+
+let primer_busy_beaver = 
+  print_string "busy_beaver5\n";
+  speed_run busy_beaver5 "" 
 (*
 1100
 ^
