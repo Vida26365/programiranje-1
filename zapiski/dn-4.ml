@@ -115,6 +115,25 @@ AB!DE
  Tudi tu je tip `t` abstrakten, zato poskrbite za učinkovitost in preglednost
  kode.
 [*----------------------------------------------------------------------------*)
+let print_array arr = 
+  Array.iteri (fun i charr -> 
+    print_int i;
+    print_newline ();
+    Array.iteri (fun j ch -> match ch with
+    | None -> ()
+    | Some (a, b, c) ->
+      print_char (Char.chr j); 
+      print_string " : ";
+      print_string ((string_of_int a)^ " ");
+      print_char b;
+      (match c with 
+      | Left -> print_string " L\n"
+      | Right -> print_string " R\n"
+    )
+    (* ^ b ^ " " ^ (match c with Left -> "L" | Right -> "R")^"\n") *)
+    ) charr;
+  ) arr
+
 module StMap = Map.Make (
   struct
     type t = state
@@ -128,7 +147,7 @@ module type MACHINE = sig
   val initial : t -> state
   val add_transition : state -> char -> state -> char -> direction -> t -> t
   val step : t -> state -> Tape.t -> (state * Tape.t) option
-  val quick_steep : ((int * char * direction) option ) array array -> int -> Tape.t -> (int * Tape.t) option
+  val quick_steep : t -> int -> Tape.t -> (int * Tape.t) option
   val dobi_indeks : state -> int -> state list -> int
 end
 
@@ -152,7 +171,8 @@ module Machine : MACHINE = struct
       po_stlst empt stlst
       );
     funkcije = 
-      Array.make ((List.length stlst) + 1) (Array.make 255 None)
+      (* Array.make ((List.length stlst) + 1) (Array.make 255 None) *)
+      Array.make_matrix ((List.length stlst) + 1) 255 None
   }
   let initial rc = rc.initial
 
@@ -174,128 +194,17 @@ module Machine : MACHINE = struct
     | Some (s, c, d) -> Some (s, Tape.move d (Tape.write c tp))
 
   let quick_steep m sti tp =
+    (* print_array m.funkcije; *)
     match m.funkcije.(sti).(Char.code (Tape.read tp)) with
-    | None -> None
-    | Some (s, c, d) -> Some (s, Tape.move d (Tape.write c tp))
+    | None -> 
+    (* print_string "none"; *)
+    None
+    | Some (s, c, d) -> 
+    (* print_string ("step "^(string_of_int sti)); *)
+    (* None *)
+    Some (s, Tape.move d (Tape.write c tp))
 
 end
-
-
-
-(* 
-module type MASCHINA = sig
-  type t
-  val step : t -> int -> Tape.t -> (int * Tape.t) option
-  val from_machine : Machine.t -> t
-  val dobi_indeks : state -> int -> state list -> int
-end
-
-
-
-
-
-
-
-
-module StMap = Map.Make (
-  struct
-    type t = state
-    let compare = String.compare
-  end
-)
-
-module type MACHINE = sig
-  type t
-  val make : state -> state list -> t
-  val initial : t -> state
-  val record : t -> (state * state list * (((state * char * direction) option ) array StMap.t))
-  val add_transition : state -> char -> state -> char -> direction -> t -> t
-  val step : t -> state -> Tape.t -> (state * Tape.t) option
-end
-
-
-
-module Machine : MACHINE = struct
-  type t = {
-    initial : state;
-    states : state list;
-    transitions : ((state * char * direction) option ) array StMap.t
-  }
-  let make st stlst = {
-    initial = st;
-    states = stlst;
-    transitions = 
-      let empt = StMap.empty in
-      let rec po_stlst mp = 
-        function
-        | [] -> StMap.add st (Array.make 255 None) mp
-        | x::xs -> po_stlst (StMap.add x (Array.make 255 None) mp) xs
-      in
-      po_stlst empt stlst
-  }
-  let initial rc = rc.initial
-  let record rc = (rc.initial, rc.states, rc.transitions)
-  let add_transition st ch s c d rc = 
-    (StMap.find st rc.transitions).(Char.code ch) <- Some (s, c, d);
-    rc
-
-  let step rc st tp =
-    match (StMap.find st rc.transitions).(Char.code (Tape.read tp)) with
-    | None -> None
-    | Some (s, c, d) -> Some (s, Tape.move d (Tape.write c tp)) 
-
-end
-
-module type MASCHINA = sig
-  type t
-  val step : t -> int -> Tape.t -> (int * Tape.t) option
-  val from_machine : Machine.t -> t
-  val dobi_indeks : state -> int -> state list -> int
-end
-
-module Maschina : MASCHINA = 
-  struct
-    type t = (int * char * direction) option array array
-  
-    let step msch (st:int) tp = 
-      match msch.(st).(Char.code (Tape.read tp)) with
-      | None -> 
-        print_string "None";
-        None
-      | Some (s, c, d) -> 
-        print_int s;
-        Some (s, Tape.move d (Tape.write c tp))
-    
-      let rec dobi_indeks (stt:state) (i:int) = 
-        function
-        | [] -> failwith "stanja ni med stanji"
-        | x::xs when x = stt -> i
-        | x::xs -> dobi_indeks stt (i+1) xs
-
-    let from_machine m = 
-      let (st, stlst, transitions) = Machine.(record) m in
-      let prehodi = Array.make ((List.length stlst) + 1) (Array.make 255 None) in
-      let lst = StMap.bindings transitions in
-      
-      let rec po_st = 
-        function
-        | [] -> prehodi
-        | (st, arr)::xs ->
-          let i = dobi_indeks st 0 (st::stlst) in
-          let narr = Array.map (function
-            | None -> None
-            | Some (s, c, d) -> 
-              print_string ("stanje: " ^ st ^ "  char: ");
-              print_char c;
-              print_newline ();
-              Some ((dobi_indeks s 0 (st::stlst)), c, d)
-          ) arr in
-
-          prehodi.(i) <- narr;
-          po_st xs
-        in
-      po_st lst
-  end *)
 
 
 
@@ -341,8 +250,8 @@ let slow_run m niz =
     (* let stt, tap = Machine.step m (Machine.initial m) tp |> Option.get in *)
   
 
-(* let primer_slow_run =
-  slow_run binary_increment "1011" *)
+let primer_slow_run =
+  slow_run binary_increment "1011"
 (*
 1011
 ^
@@ -566,7 +475,30 @@ let primer_reverse = speed_run reverse "0000111001"
 [*----------------------------------------------------------------------------*)
 
 let duplicate = 
-  Machine.make "a prvi beri" ["b prvi beri 0"; "c prvi beri 1"; "d prvi pojdi pisi 0 0"; "e prvi pojdi pisi 0 1"; "f prvi pojdi pisi 1 0"; "g prvi pojdi pisi 1 1"; "h pisi 00 00"; "i pisi 00 11"; "j pisi 11 00"; "k pisi 11 11"; "l pisi 0 00"; "m pisi 0 11"; "n pisi 1 00"; "o pisi 1 11"; "p pisi 00"; "r pisi 11"; "s pisi 0"; "q pisi 1"; "t pojdi beri"; "u beri"; "v beri 0"; "z beri 1"; "x koncano na glavi"]
+  Machine.make "a prvi beri" 
+  ["b prvi beri 0"; 
+  "c prvi beri 1"; 
+  "d prvi pojdi pisi 0 0"; 
+  "e prvi pojdi pisi 0 1"; 
+  "f prvi pojdi pisi 1 0"; 
+  "g prvi pojdi pisi 1 1"; 
+  "i pisi 00 11"; 
+  "i pisi 00 11"; 
+  "j pisi 11 00"; 
+  "k pisi 11 11"; 
+  "l pisi 0 00"; 
+  "m pisi 0 11"; 
+  "n pisi 1 00"; 
+  "o pisi 1 11"; 
+  "p pisi 00"; 
+  "r pisi 11"; 
+  "s pisi 0"; 
+  "q pisi 1"; 
+  "t pojdi beri"; 
+  "u beri"; 
+  "v beri 0"; 
+  "z beri 1"; 
+  "x koncano na glavi"]
   |> for_state "a prvi beri" [
     for_character '0' @@ write_switch_and_move ' ' "b prvi beri 0" Right;
     for_character '1' @@ write_switch_and_move ' ' "c prvi beri 1" Right;
@@ -647,7 +579,7 @@ let duplicate =
   |> for_state "v beri 0" [
     for_character '0' @@ write_switch_and_move ' ' "h pisi 00 00" Right;
     for_character '1' @@ write_switch_and_move ' ' "i pisi 00 11" Right;
-    for_character '!' @@ switch_and_move "pisi 00" Right
+    for_character '!' @@ switch_and_move "p pisi 00" Right
   ]
   |> for_state "z beri 1" [
     for_character '0' @@ write_switch_and_move ' ' "j pisi 11 00" Right;
