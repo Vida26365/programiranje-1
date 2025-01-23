@@ -173,8 +173,8 @@ module Machine : MACHINE = struct
     | None -> None
     | Some (s, c, d) -> Some (s, Tape.move d (Tape.write c tp))
 
-  let quick_steep funkcije sti tp =
-    match funkcije.(sti).(Char.code (Tape.read tp)) with
+  let quick_steep m sti tp =
+    match m.funkcije.(sti).(Char.code (Tape.read tp)) with
     | None -> None
     | Some (s, c, d) -> Some (s, Tape.move d (Tape.write c tp))
 
@@ -397,9 +397,8 @@ done
 let speed_run m niz = 
   let tp = Tape.make niz in
   (* let st = Machine.initial m in *)
-  let funkcije = Machine.funkcije m in
   let rec pom stt tp =
-    match Machine.quick_steep funkcije stt tp with
+    match Machine.quick_steep m stt tp with
     | None -> Tape.print tp
     | Some (st, tap) -> pom st tap
     in
