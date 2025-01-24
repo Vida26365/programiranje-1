@@ -74,12 +74,9 @@ module Tape : TAPE = struct
 end
 
 let primer_trak = Tape.(
-  make "A    B  CDE"
+  make "ABCDE"
   |> move Left
   |> move Left
-  |> move Right
-  |> move Right
-  |> move Right
   |> move Right
   |> move Right
   |> move Right
@@ -148,7 +145,8 @@ module type MACHINE = sig
   val add_transition : state -> char -> state -> char -> direction -> t -> t
   val step : t -> state -> Tape.t -> (state * Tape.t) option
   val quick_steep : t -> int -> Tape.t -> (int * Tape.t) option
-  val dobi_indeks : state -> int -> state list -> int
+  (* val dobi_indeks : state -> int -> state list -> int *)
+  (* val print : t -> unit *)
 end
 
 module Machine : MACHINE = struct
@@ -183,10 +181,21 @@ module Machine : MACHINE = struct
     | x::xs -> dobi_indeks stt (i+1) xs
 
   let add_transition st ch s c d rc = 
-    (Array.copy (StMap.find st rc.transitions)).(Char.code ch) <- Some (s, c, d);
-    rc.funkcije.(dobi_indeks st 0 (rc.initial::rc.states)).(Char.code ch) <- Some ((dobi_indeks s 0 (rc.initial::rc.states)), c, d);
-    rc
+    let nt = (Array.copy (StMap.find st rc.transitions)) in
+    nt.(Char.code ch) <- Some (s, c, d);
+    let nf = Array.copy rc.funkcije in
+    (* nf.(dobi_indeks st 0 (rc.initial::rc.states)).(Char.code ch) <- Some ((dobi_indeks s 0 (rc.initial::rc.states)), c, d); *)
+    Array.iteri (fun i carr -> 
+      if (dobi_indeks st 0 (rc.initial::rc.states)) = i then
+        let ncarr = Array.copy carr in
+        ncarr.(Char.code ch) <- Some ((dobi_indeks s 0 (rc.initial::rc.states)), c, d);
+        nf.(i) <- ncarr
+    ) rc.funkcije;
 
+    { rc with transitions = StMap.update st (function 
+    | None -> None
+    | Some _ -> Some nt
+    ) rc.transitions; funkcije = nf }
 
   let step rc st tp =
     match (StMap.find st rc.transitions).(Char.code (Tape.read tp)) with
@@ -203,6 +212,8 @@ module Machine : MACHINE = struct
     (* print_string ("step "^(string_of_int sti)); *)
     (* None *)
     Some (s, Tape.move d (Tape.write c tp))
+
+  let print m = print_array m.funkcije
 
 end
 
@@ -381,7 +392,7 @@ let write_switch_and_move (ch : char) (stt : state) (d : direction) (chr : char)
 
 
 let binary_increment' =
-  Machine.make "right" ["carry"; "done"]
+  Machine.make "right" ["carry"; "done"; "novo"]
   |> for_state "right" [
     for_characters "01" @@ move Right;
     for_character ' ' @@ switch_and_move "carry" Left
@@ -393,6 +404,15 @@ let binary_increment' =
 (* val binary_increment' : Machine.t = <abstr> *)
 
 let primer_binary_increment' = speed_run binary_increment' "1011"
+
+(* let test = 
+  print_string "test \n";
+  Machine.print binary_increment';
+  let nm = Machine.add_transition "novo" '1' "right" '1' Right binary_increment' in
+  print_string "-----------------\n";
+  Machine.print nm;
+  Machine.print binary_increment' *)
+
 
 (*----------------------------------------------------------------------------*
  ## Primeri Turingovih strojev
