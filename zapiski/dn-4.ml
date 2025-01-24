@@ -221,7 +221,7 @@ let slow_run m niz =
   let st = Machine.initial m in
   let rec pom stt tp =
     match Machine.step m stt tp with
-    | None -> Tape.print tp
+    | None -> Tape.print tp; print_endline stt
     | Some (st, tap) -> 
       Tape.print tp;
       print_endline stt;
