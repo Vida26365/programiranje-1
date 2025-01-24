@@ -178,7 +178,7 @@ module Machine : MACHINE = struct
 
   let rec dobi_indeks (stt:state) (i:int) = 
     function
-    | [] -> failwith "stanja ni med stanji"
+    | [] -> failwith ("stanja ni med stanji" ^ stt ^ (string_of_int i))
     | x::xs when x = stt -> i
     | x::xs -> dobi_indeks stt (i+1) xs
 
@@ -329,9 +329,9 @@ let busy_beaver5 =
   |> add_transition "E" '1' "A" ' ' Left
 )
 
-let primer_busy_beaver = 
+(*let primer_busy_beaver = 
   print_string "busy_beaver5\n";
-  speed_run busy_beaver5 "" 
+  speed_run busy_beaver5 "" *)
 (*
 1100
 ^
@@ -482,6 +482,7 @@ let duplicate =
   "e prvi pojdi pisi 0 1"; 
   "f prvi pojdi pisi 1 0"; 
   "g prvi pojdi pisi 1 1"; 
+  "h pisi 00 00";
   "i pisi 00 11"; 
   "i pisi 00 11"; 
   "j pisi 11 00"; 
@@ -584,7 +585,7 @@ let duplicate =
   |> for_state "z beri 1" [
     for_character '0' @@ write_switch_and_move ' ' "j pisi 11 00" Right;
     for_character '1' @@ write_switch_and_move ' ' "k pisi 11 11" Right;
-    for_character '!' @@ switch_and_move "pisi 11" Right
+    for_character '!' @@ switch_and_move "r pisi 11" Right
   ]
 
 let primer_duplicate = 
@@ -666,7 +667,7 @@ let primer_to_unary = speed_run to_unary "1010"
 [*----------------------------------------------------------------------------*)
 
 let to_binary = 
-  Machine.make "z1?" ["z?"; "b11"; "b1"; "sodo?"; "goinc"; "inc"; "gob"; "liho"; "sodo"; "finc"; "finito"]
+  Machine.make "z1?" ["z?"; "b11"; "b1"; "sodo?"; "goinc"; "inc"; "gob"; "liho"; "sodo"; "finc"; "finito"; ":)"]
   |> for_state "z1?" [
     for_character '1' @@ write_switch_and_move '1' "z?" Right
   ]
