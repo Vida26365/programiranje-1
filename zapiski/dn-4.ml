@@ -112,25 +112,6 @@ AB!DE
  Tudi tu je tip `t` abstrakten, zato poskrbite za učinkovitost in preglednost
  kode.
 [*----------------------------------------------------------------------------*)
-let print_array arr = 
-  Array.iteri (fun i charr -> 
-    print_int i;
-    print_newline ();
-    Array.iteri (fun j ch -> match ch with
-    | None -> ()
-    | Some (a, b, c) ->
-      print_char (Char.chr j); 
-      print_string " : ";
-      print_string ((string_of_int a)^ " ");
-      print_char b;
-      (match c with 
-      | Left -> print_string " L\n"
-      | Right -> print_string " R\n"
-    )
-    (* ^ b ^ " " ^ (match c with Left -> "L" | Right -> "R")^"\n") *)
-    ) charr;
-  ) arr
-
 module StMap = Map.Make (
   struct
     type t = state
@@ -145,8 +126,6 @@ module type MACHINE = sig
   val add_transition : state -> char -> state -> char -> direction -> t -> t
   val step : t -> state -> Tape.t -> (state * Tape.t) option
   val quick_steep : t -> int -> Tape.t -> (int * Tape.t) option
-  (* val dobi_indeks : state -> int -> state list -> int *)
-  (* val print : t -> unit *)
 end
 
 module Machine : MACHINE = struct
@@ -154,6 +133,8 @@ module Machine : MACHINE = struct
     initial : state;
     states : state list;
     transitions : ((state * char * direction) option ) array StMap.t;
+    (* funkcije so isto kot tranzicije, samo da namesto stata dobi pozicijo stata v matriki *)
+    (* Ja, lahko bi naredila vse samo s funkcijami, ampak sem utrujena in se mi ne da več *)
     funkcije : ((int * char * direction) option ) array array
   }
   let make st stlst = {
@@ -169,7 +150,6 @@ module Machine : MACHINE = struct
       po_stlst empt stlst
       );
     funkcije = 
-      (* Array.make ((List.length stlst) + 1) (Array.make 255 None) *)
       Array.make_matrix ((List.length stlst) + 1) 255 None
   }
   let initial rc = rc.initial
@@ -181,10 +161,10 @@ module Machine : MACHINE = struct
     | x::xs -> dobi_indeks stt (i+1) xs
 
   let add_transition st ch s c d rc = 
+    (* dodam posebaj prehodne funkcije v tranzicije in v funkcije*)
     let nt = (Array.copy (StMap.find st rc.transitions)) in
     nt.(Char.code ch) <- Some (s, c, d);
     let nf = Array.copy rc.funkcije in
-    (* nf.(dobi_indeks st 0 (rc.initial::rc.states)).(Char.code ch) <- Some ((dobi_indeks s 0 (rc.initial::rc.states)), c, d); *)
     Array.iteri (fun i carr -> 
       if (dobi_indeks st 0 (rc.initial::rc.states)) = i then
         let ncarr = Array.copy carr in
@@ -203,18 +183,9 @@ module Machine : MACHINE = struct
     | Some (s, c, d) -> Some (s, Tape.move d (Tape.write c tp))
 
   let quick_steep m sti tp =
-    (* print_array m.funkcije; *)
     match m.funkcije.(sti).(Char.code (Tape.read tp)) with
-    | None -> 
-    (* print_string "none"; *)
-    None
-    | Some (s, c, d) -> 
-    (* print_string ("step "^(string_of_int sti)); *)
-    (* None *)
-    Some (s, Tape.move d (Tape.write c tp))
-
-  let print m = print_array m.funkcije
-
+    | None -> None
+    | Some (s, c, d) -> Some (s, Tape.move d (Tape.write c tp))
 end
 
 
@@ -294,15 +265,6 @@ done
 *)
 (* val primer_slow_run : unit = () *)
 
-(* let speed_run m niz = 
-  let tp = Tape.make niz in
-  let msch = Maschina.from_machine m in
-  let rec pom stt tp = 
-    match (Maschina.step msch stt tp) with
-    | None -> Tape.print tp
-    | Some (st, tap) -> pom st tap
-  in
-  pom 0 tp *)
 
 (* let speed_run m niz = 
   let tp = Tape.make niz in
@@ -316,7 +278,6 @@ done
 
 let speed_run m niz = 
   let tp = Tape.make niz in
-  (* let st = Machine.initial m in *)
   let rec pom stt tp =
     match Machine.quick_steep m stt tp with
     | None -> Tape.print tp
@@ -327,22 +288,7 @@ let speed_run m niz =
 let primer_speed_run =
   speed_run binary_increment "1011"
 
-let busy_beaver5 =
-  Machine.(make "A" ["B"; "C"; "D"; "E"]
-  |> add_transition "A" ' ' "B" '1' Right
-  |> add_transition "A" '1' "C" '1' Left
-  |> add_transition "B" ' ' "C" '1' Right
-  |> add_transition "B" '1' "B" '1' Right
-  |> add_transition "C" ' ' "D" '1' Right
-  |> add_transition "C" '1' "E" ' ' Left
-  |> add_transition "D" ' ' "A" '1' Left
-  |> add_transition "D" '1' "D" '1' Left
-  |> add_transition "E" '1' "A" ' ' Left
-)
 
-(*let primer_busy_beaver = 
-  print_string "busy_beaver5\n";
-  speed_run busy_beaver5 "" *)
 (*
 1100
 ^
@@ -405,14 +351,6 @@ let binary_increment' =
 
 let primer_binary_increment' = speed_run binary_increment' "1011"
 
-(* let test = 
-  print_string "test \n";
-  Machine.print binary_increment';
-  let nm = Machine.add_transition "novo" '1' "right" '1' Right binary_increment' in
-  print_string "-----------------\n";
-  Machine.print nm;
-  Machine.print binary_increment' *)
-
 
 (*----------------------------------------------------------------------------*
  ## Primeri Turingovih strojev
@@ -435,6 +373,9 @@ let primer_binary_increment' = speed_run binary_increment' "1011"
  Sestavite Turingov stroj, ki začetni niz obrne na glavo.
 [*----------------------------------------------------------------------------*)
 let reverse = 
+  (* Zgodba se gre o postavljanju železnice v času priseljevanja evropejcev v severno ameriko *)
+  (* 0 - ničvredne kaminine *)
+  (* 1 - vredne kamnine *)
   Machine.make "prva_izvidnica" ["izvidnica"; "postavljanje_tracnic"; "odlaganje_vrednih_kamnin"; "odlaganje_nicvrednih_kamnin"; "nazaj_do_tracnic"; "aaaa_indijanci,_pospravi_stvari_in_tracnice!"; "pospravi_tracnice_in_odnesi_vredne_kamnine"; "pospravi_tracnice_in_odnesi_nicvredne_kamnine"; "fjuhhh,_ubezali_smo_jim"; "mirno smo na zacetku"]	
   |> for_state "prva_izvidnica" [
     for_character '!' @@ move Right;
@@ -495,6 +436,7 @@ let primer_reverse = speed_run reverse "0000111001"
 [*----------------------------------------------------------------------------*)
 
 let duplicate = 
+  (* Stroj podvaja dva znaka na enkrat, da ne rabi toliko korakov *)
   Machine.make "a prvi beri" 
   ["b prvi beri 0"; 
   "c prvi beri 1"; 
@@ -626,6 +568,7 @@ let primer_duplicate =
 [*----------------------------------------------------------------------------*)
 
 let to_unary = 
+  (* Zgodba se gre o človeku ki dobiva veliko paketov in jih potem postavlja enega za drugim *)
   Machine.make "ali mogoce kdo slucajno rabi turingov stroj da mu izpise prazen niz" 
   ["Resno? Resno?"; 
   "potsavi #"; 
@@ -687,6 +630,13 @@ let primer_to_unary = speed_run to_unary "1010"
 [*----------------------------------------------------------------------------*)
 
 let to_binary = 
+  (* Pobira dve enki na enkrat *)
+  (* Se opravičujem za imena *)
+  (* z - začetek *)
+  (* b - beri *)
+  (* go.* - pojdi nekaj *)
+  (* inc - increase *)
+  (* f.* - final *)
   Machine.make "z1?" ["z?"; "b11"; "b1"; "sodo?"; "goinc"; "inc"; "gob"; "liho"; "sodo"; "finc"; "finito"; ":)"]
   |> for_state "z1?" [
     for_character '1' @@ write_switch_and_move '1' "z?" Right
@@ -734,7 +684,7 @@ let to_binary =
     for_characters "01" @@ move Left;
     for_character ' ' @@ switch_and_move ":)" Right
   ]
-let primer_to_binary = speed_run to_binary (String.make 172868378 '1')
+let primer_to_binary = speed_run to_binary (String.make 42 '1')
 (* 
 101010                                           
 ^
