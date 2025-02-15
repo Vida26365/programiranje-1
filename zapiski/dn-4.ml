@@ -155,6 +155,7 @@ module Machine : MACHINE = struct
   let initial rc = rc.initial
 
   let rec dobi_indeks (stt:state) (i:int) = 
+    (* O(n) *)
     function
     | [] -> failwith ("stanja ni med stanji" ^ stt ^ (string_of_int i))
     | x::xs when x = stt -> i
@@ -165,24 +166,29 @@ module Machine : MACHINE = struct
     let nt = (Array.copy (StMap.find st rc.transitions)) in
     nt.(Char.code ch) <- Some (s, c, d);
     let nf = Array.copy rc.funkcije in
+
+    (* O(n) *)
     Array.iteri (fun i carr -> 
       if (dobi_indeks st 0 (rc.initial::rc.states)) = i then
         let ncarr = Array.copy carr in
         ncarr.(Char.code ch) <- Some ((dobi_indeks s 0 (rc.initial::rc.states)), c, d);
         nf.(i) <- ncarr
     ) rc.funkcije;
-
+    
+    (* O(ln(n)) *)
     { rc with transitions = StMap.update st (function 
     | None -> None
     | Some _ -> Some nt
     ) rc.transitions; funkcije = nf }
 
   let step rc st tp =
+    (* O(ln(n)) *)
     match (StMap.find st rc.transitions).(Char.code (Tape.read tp)) with
     | None -> None
     | Some (s, c, d) -> Some (s, Tape.move d (Tape.write c tp))
 
   let quick_steep m sti tp =
+    (* O(1) *)
     match m.funkcije.(sti).(Char.code (Tape.read tp)) with
     | None -> None
     | Some (s, c, d) -> Some (s, Tape.move d (Tape.write c tp))
@@ -232,8 +238,8 @@ let slow_run m niz =
     (* let stt, tap = Machine.step m (Machine.initial m) tp |> Option.get in *)
   
 
-let primer_slow_run =
-  slow_run binary_increment "1011"
+(* let primer_slow_run =
+  slow_run binary_increment "1011" *)
 (*
 1011
 ^
@@ -278,12 +284,12 @@ done
 
 let speed_run m niz = 
   let tp = Tape.make niz in
-  let rec pom stt tp =
+  let rec pom stt tp i =
     match Machine.quick_steep m stt tp with
-    | None -> Tape.print tp
-    | Some (st, tap) -> pom st tap
+    | None -> Tape.print tp; print_int i; print_newline ()
+    | Some (st, tap) -> pom st tap (i+1)
     in
-  pom 0 tp
+  pom 0 tp 0
 
 let primer_speed_run =
   speed_run binary_increment "1011"
@@ -349,7 +355,9 @@ let binary_increment' =
   ]
 (* val binary_increment' : Machine.t = <abstr> *)
 
-let primer_binary_increment' = speed_run binary_increment' "1011"
+let primer_binary_increment' =
+  print_string "binary_increment': \n"; 
+  speed_run binary_increment' "1011"
 
 
 (*----------------------------------------------------------------------------*
@@ -420,7 +428,9 @@ let reverse =
     for_characters "01 " @@ switch_and_move "mirno smo na zacetku" Left
   ]
 
-let primer_reverse = speed_run reverse "0000111001"
+let primer_reverse = 
+  print_string "reverse: \n";
+  speed_run reverse "0000111001"
 (* 
 1001110000          
 ^
@@ -551,6 +561,7 @@ let duplicate =
   ]
 
 let primer_duplicate = 
+  print_string "duplicate: \n";
   speed_run duplicate "010011"
 (* 
 001100001111       
@@ -612,7 +623,9 @@ let to_unary =
     for_character '#' @@ write_switch_and_move ' ' "- zgodba po resničnih dogodkih (Ok, zelo prilagojenih dogodkih)" Right
   ]
 
-let primer_to_unary = speed_run to_unary "1010"
+let primer_to_unary = 
+  print_string "to_unary: \n";
+  speed_run to_unary "1010"
 (* 
 1111111111
 ^
@@ -684,7 +697,9 @@ let to_binary =
     for_characters "01" @@ move Left;
     for_character ' ' @@ switch_and_move ":)" Right
   ]
-let primer_to_binary = speed_run to_binary (String.make 42 '1')
+let primer_to_binary = 
+  print_string "to_binary: \n";
+  speed_run to_binary (String.make 42 '1')
 (* 
 101010                                           
 ^
